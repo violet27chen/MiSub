@@ -116,12 +116,17 @@ export const POLICY_GROUPS = {
         proxies.forEach(p => {
             const name = String(p?.name || '').trim();
             if (!name) return;
-            if (name.startsWith(manualPrefix)) {
+            
+            const isManualByPrefix = name.startsWith(manualPrefix);
+            const isManualByDefault = manualPrefix !== '手动节点' && name.startsWith('手动节点');
+            if (isManualByPrefix || isManualByDefault) {
                 manualNodes.push(name);
             } else {
-                const matchedSub = targetMisubs.find(sub => 
-                    typeof sub?.name === 'string' && sub.name.trim() !== '' && name.startsWith(sub.name.trim())
-                );
+                const matchedSub = targetMisubs.find(sub => {
+                    const subName = typeof sub?.name === 'string' ? sub.name.trim() : '';
+                    if (!subName) return false;
+                    return name.startsWith(subName);
+                });
                 if (matchedSub) {
                     const subName = matchedSub.name.trim();
                     if (!subscriptionGroups[subName]) {
