@@ -111,26 +111,35 @@ export const POLICY_GROUPS = {
         const targetMisubs = Array.isArray(options.targetMisubs) ? options.targetMisubs : [];
         const manualNames = Array.isArray(options.manualNames) ? options.manualNames : [];
         const healthCheckUrl = options.healthCheckUrl || 'http://www.gstatic.com/generate_204';
+
+        // [分组修复] 去除名字开头的旗帜/emoji 再匹配前缀。
+        // addFlagEmoji 会把 🇨🇳 / 🌍 等加在名字最前面，导致 startsWith(前缀) 失效，
+        // 使手动节点或第二个机场节点误判为未匹配而全掉进“机场节点”组。
+        const stripLeadingEmoji = (raw) =>
+            raw.replace(/^[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{20E3}]+\s?/u, '');
         
         const manualNodes = [];
         const subscriptionGroups = {};
         const unmatchedNodes = [];
         
         proxies.forEach(p => {
-            const name = String(p?.name || '').trim();
-            if (!name) return;
+            const rawName = String(p?.name || '').trim();
+            if (!rawName) return;
+            // 仅用于匹配，分组成员仍用原始名（含 emoji），保证引用正确
+            const matchName = stripLeadingEmoji(rawName);
             
-            const isManualByPrefix = name.startsWith(manualPrefix);
-            const isManualByDefault = manualPrefix !== '手动节点' && name.startsWith('手动节点');
-            const isManualByName = manualNames.includes(name);
+            const isManualByPrefix = matchName.startsWith(manualPrefix);
+            const isManualByDefault = manualPrefix !== '手动节点' && matchName.startsWith('手动节点');
+            const isManualByName = manualNames.includes(rawName) || manualNames.includes(matchName);
             if (isManualByPrefix || isManualByDefault || isManualByName) {
-                manualNodes.push(name);
+                manualNodes.push(rawName);
             } else {
                 const matchedSub = targetMisubs.find(sub => {
-                    const subName = (typeof sub?.groupName === 'string' && sub.groupName.trim()) ? sub.groupName.trim()
+                    const subNameRaw = (typeof sub?.groupName === 'string' && sub.groupName.trim()) ? sub.groupName.trim()
                         : (typeof sub?.name === 'string' ? sub.name.trim() : '');
+                    const subName = stripLeadingEmoji(subNameRaw);
                     if (!subName) return false;
-                    return name.startsWith(subName);
+                    return matchName.startsWith(subName);
                 });
                 if (matchedSub) {
                     const subName = (typeof matchedSub?.groupName === 'string' && matchedSub.groupName.trim()) ? matchedSub.groupName.trim()
@@ -138,9 +147,9 @@ export const POLICY_GROUPS = {
                     if (!subscriptionGroups[subName]) {
                         subscriptionGroups[subName] = [];
                     }
-                    subscriptionGroups[subName].push(name);
+                    subscriptionGroups[subName].push(rawName);
                 } else {
-                    unmatchedNodes.push(name);
+                    unmatchedNodes.push(rawName);
                 }
             }
         });
