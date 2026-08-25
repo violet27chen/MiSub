@@ -104,12 +104,30 @@ function _generateRegionGroups(proxies, options = {}) {
  * 策略组工厂
  */
 export const POLICY_GROUPS = {
-    // 基础配置：仅保留一个总选组，所有节点归入其中，不做国家/地区/业务拆分
+    // 基础配置：机场节点一个分组，手动节点一个分组，不做国家/地区/业务拆分
     BASE: (proxies, options = {}) => {
-        const proxyNames = proxies.map(p => p.tag || p.name);
-        return [
-            { name: DEFAULT_SELECT_GROUP, type: 'select', proxies: ['DIRECT', ...proxyNames] }
-        ];
+        const manualPrefix = options.manualNodePrefix || '手动节点';
+        const subscriptionNodes = [];
+        const manualNodes = [];
+
+        proxies.forEach(p => {
+            const name = p.tag || p.name || '';
+            if (name.startsWith(manualPrefix)) {
+                manualNodes.push(name);
+            } else {
+                subscriptionNodes.push(name);
+            }
+        });
+
+        const groups = [];
+        if (subscriptionNodes.length > 0) {
+            groups.push({ name: '🚀 机场节点', type: 'select', proxies: ['DIRECT', ...subscriptionNodes] });
+        }
+        if (manualNodes.length > 0) {
+            groups.push({ name: '👋 手动节点', type: 'select', proxies: ['DIRECT', ...manualNodes] });
+        }
+
+        return groups;
     },
     // 标准配置：全能型
     STD: (proxies, options = {}) => {

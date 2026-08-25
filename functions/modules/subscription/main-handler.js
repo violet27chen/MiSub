@@ -601,6 +601,26 @@ export async function handleMisubRequest(context) {
     // 检查是否强制刷新（通过 URL 参数）
     const forceRefresh = url.searchParams.has('refresh') || url.searchParams.has('nocache') || url.searchParams.has('debug');
 
+    const activeProfile = profileIdentifier ? allProfiles.find(p => (p.customId && p.customId === profileIdentifier) || p.id === profileIdentifier) : null;
+
+    // 设置优先级：订阅组设置 > 全局设置 > 内置默认值
+    // prefixSettings 回退逻辑
+    const globalPrefixSettings = config.defaultPrefixSettings || {};
+    const profilePrefixSettings = activeProfile?.prefixSettings || null;
+    const effectivePrefixSettings = { ...globalPrefixSettings };
+
+    if (profilePrefixSettings && typeof profilePrefixSettings === 'object') {
+        if (profilePrefixSettings.enableManualNodes !== null && profilePrefixSettings.enableManualNodes !== undefined) {
+            effectivePrefixSettings.enableManualNodes = profilePrefixSettings.enableManualNodes;
+        }
+        if (profilePrefixSettings.enableSubscriptions !== null && profilePrefixSettings.enableSubscriptions !== undefined) {
+            effectivePrefixSettings.enableSubscriptions = profilePrefixSettings.enableSubscriptions;
+        }
+        if (profilePrefixSettings.manualNodePrefix && profilePrefixSettings.manualNodePrefix.trim() !== '') {
+            effectivePrefixSettings.manualNodePrefix = profilePrefixSettings.manualNodePrefix;
+        }
+    }
+
     // 定义刷新函数（用于后台刷新）
     const refreshNodes = async (isBackground = false) => {
         const isDebugToken = (token === 'b0b422857bb46aba65da8234c84f38c6');
@@ -624,26 +644,6 @@ export async function handleMisubRequest(context) {
             type: profileIdentifier ? 'profile' : 'token',
             domain
         };
-
-        const activeProfile = profileIdentifier ? allProfiles.find(p => (p.customId && p.customId === profileIdentifier) || p.id === profileIdentifier) : null;
-
-        // 设置优先级：订阅组设置 > 全局设置 > 内置默认值
-        // prefixSettings 回退逻辑
-        const globalPrefixSettings = config.defaultPrefixSettings || {};
-        const profilePrefixSettings = activeProfile?.prefixSettings || null;
-        const effectivePrefixSettings = { ...globalPrefixSettings };
-
-        if (profilePrefixSettings && typeof profilePrefixSettings === 'object') {
-            if (profilePrefixSettings.enableManualNodes !== null && profilePrefixSettings.enableManualNodes !== undefined) {
-                effectivePrefixSettings.enableManualNodes = profilePrefixSettings.enableManualNodes;
-            }
-            if (profilePrefixSettings.enableSubscriptions !== null && profilePrefixSettings.enableSubscriptions !== undefined) {
-                effectivePrefixSettings.enableSubscriptions = profilePrefixSettings.enableSubscriptions;
-            }
-            if (profilePrefixSettings.manualNodePrefix && profilePrefixSettings.manualNodePrefix.trim() !== '') {
-                effectivePrefixSettings.manualNodePrefix = profilePrefixSettings.manualNodePrefix;
-            }
-        }
 
         // nodeTransform 回退逻辑
         const globalNodeTransform = config.defaultNodeTransform || {};
@@ -778,7 +778,8 @@ export async function handleMisubRequest(context) {
                     enableTfo: urlTfo === 'true' || urlTfo === '1',
                     ruleLevel,
                     regionOverrides: Array.isArray(config.regionOverrides) ? config.regionOverrides : [],
-                    isMeta: isMetaCore(userAgentHeader, url.searchParams)
+                    isMeta: isMetaCore(userAgentHeader, url.searchParams),
+                    manualNodePrefix: effectivePrefixSettings.manualNodePrefix || '手动节点'
                 };
                 const rendered = await ProcessorService.renderOutput({
                     targetFormat,
@@ -916,7 +917,8 @@ export async function handleMisubRequest(context) {
         enableTfo: finalEnableTfo,
         ruleLevel: ruleLevel, // 统一后的规则等级
         regionOverrides: Array.isArray(config.regionOverrides) ? config.regionOverrides : [],
-        isMeta: isMetaCore(userAgentHeader, url.searchParams)
+        isMeta: isMetaCore(userAgentHeader, url.searchParams),
+        manualNodePrefix: effectivePrefixSettings.manualNodePrefix || '手动节点'
     };
 
     const managedConfigUrl = buildManagedConfigUrl(request.url);

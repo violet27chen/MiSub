@@ -496,7 +496,7 @@ dns-server = 119.29.29.29, 223.5.5.5, system`);
     const builtinRuleLines = getBuiltinRules(levelKey, 'surge');
     const hasProxyGroups = abstractGroups.length > 0;
     const defaultTarget = hasProxyGroups
-        ? (levelKey === 'RELAY' ? DEFAULT_RELAY_GROUP : DEFAULT_SELECT_GROUP)
+        ? (levelKey === 'RELAY' ? DEFAULT_RELAY_GROUP : (abstractGroups[0]?.name || DEFAULT_SELECT_GROUP))
         : 'DIRECT';
     const ruleLines = [
         '# 基础分流',

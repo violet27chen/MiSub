@@ -375,7 +375,7 @@ export function generateBuiltinSingboxConfig(nodeList, options = {}) {
         route: {
             auto_detect_interface: true,
             final: groupOutbounds.length > 0
-                ? (levelKey === 'RELAY' ? DEFAULT_RELAY_GROUP : DEFAULT_SELECT_GROUP)
+                ? (levelKey === 'RELAY' ? DEFAULT_RELAY_GROUP : (groupOutbounds[0]?.tag || DEFAULT_SELECT_GROUP))
                 : (outbounds.length > 0 ? outbounds[0].tag : 'DIRECT'),
             rule_set: ruleSets,
             rules: routeRules

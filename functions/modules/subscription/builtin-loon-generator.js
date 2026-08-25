@@ -379,7 +379,7 @@ resource-parser = https://raw.githubusercontent.com/sub-store-org/Sub-Store/mast
     const builtinRuleLines = getBuiltinRules(levelKey, 'loon');
     const hasProxyGroups = abstractGroups.length > 0;
     const defaultTarget = hasProxyGroups
-        ? (levelKey === 'RELAY' ? DEFAULT_RELAY_GROUP : DEFAULT_SELECT_GROUP)
+        ? (levelKey === 'RELAY' ? DEFAULT_RELAY_GROUP : (abstractGroups[0]?.name || DEFAULT_SELECT_GROUP))
         : 'DIRECT';
     const ruleLines = [
         '# 基础分流',

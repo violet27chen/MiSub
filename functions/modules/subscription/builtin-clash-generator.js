@@ -168,14 +168,16 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
     // 生成 YAML
     try {
         const levelKey = (ruleLevel || 'std').toUpperCase();
-        const rawRules = isHiddifyClient
-            ? ['MATCH,🚀 节点选择']
-            : getBuiltinRules(levelKey, 'clash');
-
+        
         // 生成策略组并执行引用修剪
         const policyGroupsFactory = POLICY_GROUPS[levelKey] || POLICY_GROUPS.STD;
         let proxyGroups = policyGroupsFactory(proxies, options);
         proxyGroups = pruneProxyGroups(proxyGroups, proxies);
+        
+        const defaultTarget = proxyGroups[0]?.name || DEFAULT_SELECT_GROUP;
+        const rawRules = isHiddifyClient
+            ? [`MATCH,${defaultTarget}`]
+            : getBuiltinRules(levelKey, 'clash');
         
         // 提取远程 Provider 定义。Hiddify 4.x 的 Clash 转 sing-box 解析对 rule-providers 兼容性较差，
         // 自动识别为 Hiddify 时降级为纯 MATCH 规则，避免导入时报 unable to determine config format。
