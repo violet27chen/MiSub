@@ -104,9 +104,12 @@ function _generateRegionGroups(proxies, options = {}) {
  * 策略组工厂
  */
 export const POLICY_GROUPS = {
-    // 基础配置：仅输出代理节点，不生成任何策略组
-    BASE: () => {
-        return [];
+    // 基础配置：仅保留一个总选组，所有节点归入其中，不做国家/地区/业务拆分
+    BASE: (proxies, options = {}) => {
+        const proxyNames = proxies.map(p => p.tag || p.name);
+        return [
+            { name: DEFAULT_SELECT_GROUP, type: 'select', proxies: ['DIRECT', ...proxyNames] }
+        ];
     },
     // 标准配置：全能型
     STD: (proxies, options = {}) => {
@@ -233,7 +236,9 @@ export const REMOTE_SOURCES = {
  * 分流规则集 (通过 RULE-SET 引用远程源)
  */
 export const RULE_SETS = {
-    BASE: [],
+    BASE: [
+        `MATCH,${DEFAULT_SELECT_GROUP}`
+    ],
     STD: [
         'RULE-SET,ADS,🎬 视频广告',
         'RULE-SET,AI,🤖 智能 AI',
