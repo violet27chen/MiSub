@@ -224,6 +224,16 @@ watch(isExternalEngine, (enabled) => {
                   <span class="text-[11px] font-medium text-gray-700 dark:text-gray-300">{{ t('settings.transformBuiltinUdp') }}</span>
                   <Switch v-model="settings.builtinEnableUdp" size="sm" />
                 </div>
+                <div class="rounded-lg border border-gray-100 bg-gray-50/50 p-2.5 dark:border-white/5 dark:bg-white/5">
+                  <label class="mb-1.5 block text-[11px] font-medium text-gray-700 dark:text-gray-300">{{ t('settings.transformHealthCheckUrl') }}</label>
+                  <input
+                    v-model="settings.healthCheckUrl"
+                    type="text"
+                    placeholder="http://www.gstatic.com/generate_204"
+                    class="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                  />
+                  <p class="mt-1.5 text-[10px] leading-relaxed text-gray-400">{{ t('settings.transformHealthCheckUrlHint') }}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -276,6 +286,7 @@ watch(isExternalEngine, (enabled) => {
           </select>
           <input
             type="text"
+            data-testid="subconverter-backend-input"
             v-model="settings.subconverter.defaultBackend"
             placeholder="subapi.cmliussss.net"
             class="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-orange-500 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"

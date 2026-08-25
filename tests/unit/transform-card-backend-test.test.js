@@ -92,7 +92,7 @@ describe('TransformCard third-party backend test button', () => {
     await nextTick();
     expect(wrapper.find('[data-testid="subconverter-backend-test-result"]').exists()).toBe(true);
 
-    const backendInput = wrapper.get('input[type="text"]');
+    const backendInput = wrapper.get('[data-testid="subconverter-backend-input"]');
     await backendInput.setValue('subapi.cmliussss.net');
     await nextTick();
 
