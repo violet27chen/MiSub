@@ -134,26 +134,36 @@ export const POLICY_GROUPS = {
             }
         });
         
-        const groups = [];
+        const subgroups = [];
         if (manualNodes.length > 0) {
-            groups.push({ name: '👋 手动节点', type: 'select', proxies: ['DIRECT', ...manualNodes] });
+            subgroups.push({ name: '👋 手动节点', type: 'select', proxies: ['DIRECT', ...manualNodes] });
         }
         
         for (const [subName, nodes] of Object.entries(subscriptionGroups)) {
             if (nodes.length > 0) {
-                groups.push({ name: `🚀 ${subName}`, type: 'select', proxies: ['DIRECT', ...nodes] });
+                subgroups.push({ name: `🚀 ${subName}`, type: 'select', proxies: ['DIRECT', ...nodes] });
             }
         }
         
         if (unmatchedNodes.length > 0) {
-            groups.push({ name: '🚀 机场节点', type: 'select', proxies: ['DIRECT', ...unmatchedNodes] });
+            subgroups.push({ name: '🚀 机场节点', type: 'select', proxies: ['DIRECT', ...unmatchedNodes] });
         }
 
-        if (groups.length === 0) {
-            groups.push({ name: DEFAULT_SELECT_GROUP, type: 'select', proxies: ['DIRECT'] });
+        if (subgroups.length === 0) {
+            subgroups.push({ name: DEFAULT_SELECT_GROUP, type: 'select', proxies: ['DIRECT'] });
         }
         
-        return groups;
+        // 第一个分组作为总选组，包含所有子分组名称，使所有分组都能被实际路由到
+        const masterGroup = {
+            name: subgroups[0].name,
+            type: 'select',
+            proxies: [
+                'DIRECT',
+                ...subgroups.slice(1).map(g => g.name)
+            ]
+        };
+        
+        return [masterGroup, ...subgroups];
     },
     // 标准配置：全能型
     STD: (proxies, options = {}) => {
