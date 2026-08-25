@@ -542,6 +542,19 @@ export function migrateConfigSettings(config) {
         migratedConfig.builtinLoonSkipCertVerify = toBoolean(migratedConfig.builtinLoonSkipCertVerify);
     }
 
+    // [Migration] 将旧默认规则等级 std 自动迁移到 base
+    // 仅当用户未显式配置自定义规则/算子/模板时才迁移，避免破坏已有个性化分流
+    const hasCustomRules = migratedConfig.transformConfigMode === 'custom'
+        || migratedConfig.transformConfigMode === 'custom_template'
+        || (typeof migratedConfig.transformConfig === 'string' && migratedConfig.transformConfig.trim() !== '');
+    const hasCustomTransform = migratedConfig.defaultNodeTransform?.enabled === true
+        || (Array.isArray(migratedConfig.defaultOperators) && migratedConfig.defaultOperators.length > 0)
+        || (Array.isArray(migratedConfig.nodeTransformPresets) && migratedConfig.nodeTransformPresets.length > 0);
+
+    if (!hasCustomRules && !hasCustomTransform && migratedConfig.ruleLevel === 'std') {
+        migratedConfig.ruleLevel = 'base';
+    }
+
     return migratedConfig;
 }
 
