@@ -159,7 +159,7 @@ export const POLICY_GROUPS = {
             type: 'select',
             proxies: [
                 'DIRECT',
-                ...subgroups.slice(1).map(g => g.name)
+                ...subgroups.map(g => g.name)
             ]
         };
         
