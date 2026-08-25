@@ -175,9 +175,13 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
         proxyGroups = pruneProxyGroups(proxyGroups, proxies);
         
         const defaultTarget = proxyGroups[0]?.name || DEFAULT_SELECT_GROUP;
-        const rawRules = isHiddifyClient
+        let rawRules = isHiddifyClient
             ? [`MATCH,${defaultTarget}`]
             : getBuiltinRules(levelKey, 'clash');
+
+        if (levelKey === 'BASE') {
+            rawRules = [`MATCH,${defaultTarget}`];
+        }
         
         // 提取远程 Provider 定义。Hiddify 4.x 的 Clash 转 sing-box 解析对 rule-providers 兼容性较差，
         // 自动识别为 Hiddify 时降级为纯 MATCH 规则，避免导入时报 unable to determine config format。

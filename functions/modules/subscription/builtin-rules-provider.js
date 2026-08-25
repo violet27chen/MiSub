@@ -104,7 +104,7 @@ function _generateRegionGroups(proxies, options = {}) {
  * 策略组工厂
  */
 export const POLICY_GROUPS = {
-    // 基础配置：按机场分组，手动节点统一一个分组
+    // 基础配置：按机场分组，手动节点统一一个分组；无额外业务/地区分组
     BASE: (proxies, options = {}) => {
         const manualPrefix = options.manualNodePrefix || '手动节点';
         const targetMisubs = Array.isArray(options.targetMisubs) ? options.targetMisubs : [];
@@ -114,12 +114,13 @@ export const POLICY_GROUPS = {
         const unmatchedNodes = [];
         
         proxies.forEach(p => {
-            const name = p.tag || p.name || '';
+            const name = String(p?.name || '').trim();
+            if (!name) return;
             if (name.startsWith(manualPrefix)) {
                 manualNodes.push(name);
             } else {
                 const matchedSub = targetMisubs.find(sub => 
-                    typeof sub?.name === 'string' && sub.name.trim() !== '' && name.startsWith(sub.name)
+                    typeof sub?.name === 'string' && sub.name.trim() !== '' && name.startsWith(sub.name.trim())
                 );
                 if (matchedSub) {
                     const subName = matchedSub.name.trim();
@@ -146,6 +147,10 @@ export const POLICY_GROUPS = {
         
         if (unmatchedNodes.length > 0) {
             groups.push({ name: '🚀 机场节点', type: 'select', proxies: ['DIRECT', ...unmatchedNodes] });
+        }
+
+        if (groups.length === 0) {
+            groups.push({ name: DEFAULT_SELECT_GROUP, type: 'select', proxies: ['DIRECT'] });
         }
         
         return groups;
@@ -275,7 +280,9 @@ export const REMOTE_SOURCES = {
  * 分流规则集 (通过 RULE-SET 引用远程源)
  */
 export const RULE_SETS = {
-    BASE: [],
+    BASE: [
+        `MATCH,${DEFAULT_SELECT_GROUP}`
+    ],
     STD: [
         'RULE-SET,ADS,🎬 视频广告',
         'RULE-SET,AI,🤖 智能 AI',
