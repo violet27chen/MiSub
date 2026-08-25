@@ -155,7 +155,7 @@ export const POLICY_GROUPS = {
         
         // 第一个分组作为总选组，包含所有子分组名称，使所有分组都能被实际路由到
         const masterGroup = {
-            name: subgroups[0].name,
+            name: DEFAULT_SELECT_GROUP,
             type: 'select',
             proxies: [
                 'DIRECT',
