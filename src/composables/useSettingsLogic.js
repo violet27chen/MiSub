@@ -130,7 +130,7 @@ export function useSettingsLogic() {
                 disguise: disguiseConfig.value
             };
 
-            settingsToSave.ruleLevel = settingsToSave.ruleLevel || settingsToSave.clashRuleLevel || 'std';
+            settingsToSave.ruleLevel = settingsToSave.ruleLevel || settingsToSave.clashRuleLevel || 'base';
 
             delete settingsToSave.prefixConfig;
             delete settingsToSave.prependSubName;

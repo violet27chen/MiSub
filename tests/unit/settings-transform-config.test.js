@@ -5,7 +5,7 @@ import { validateProfile } from '../../src/utils/validation-utils.js';
 describe('Transform config settings', () => {
     it('defaults transformConfig to empty for built-in templates', () => {
         expect(DEFAULT_SETTINGS.transformConfigMode).toBe('builtin');
-        expect(DEFAULT_SETTINGS.ruleLevel).toBe('std');
+        expect(DEFAULT_SETTINGS.ruleLevel).toBe('base');
         expect('clashRuleLevel' in DEFAULT_SETTINGS).toBe(false);
         expect(DEFAULT_SETTINGS.transformConfig).toBe('');
         expect(DEFAULT_PROFILE_FORM.ruleLevel).toBe('');

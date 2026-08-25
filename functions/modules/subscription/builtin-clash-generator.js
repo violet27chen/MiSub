@@ -221,10 +221,9 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
                 'store-selected': true,
                 'subscription-url': options.managedConfigUrl || ''
             },
-
-            'proxy-groups': proxyGroups,
+            ...(proxyGroups.length ? { 'proxy-groups': proxyGroups } : {}),
             ...(Object.keys(ruleProviders).length ? { 'rule-providers': ruleProviders } : {}),
-            'rules': clashRules
+            ...(clashRules.length ? { 'rules': clashRules } : {})
         };
 
         let yamlStr = yaml.dump(config, {

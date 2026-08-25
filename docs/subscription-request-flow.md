@@ -157,7 +157,7 @@ profile 模式下，如果访问日志开启且不是 `callback_token`/内部请
 - URL `level` 或 `ruleLevel` 优先。
 - 其次订阅组 `ruleLevel`/`clashRuleLevel`。
 - 再其次全局 `ruleLevel`/`clashRuleLevel`。
-- 默认 `std`。
+- 默认 `base`。
 - 如果使用 remote/custom 模板，内置规则等级强制为 `none`。
 
 URL 参数可以覆盖部分转换行为：

@@ -377,6 +377,10 @@ resource-parser = https://raw.githubusercontent.com/sub-store-org/Sub-Store/mast
     sections.push(`[Proxy Group]\n${proxyGroupLines.join('\n')}`);
 
     const builtinRuleLines = getBuiltinRules(levelKey, 'loon');
+    const hasProxyGroups = abstractGroups.length > 0;
+    const defaultTarget = hasProxyGroups
+        ? (levelKey === 'RELAY' ? DEFAULT_RELAY_GROUP : DEFAULT_SELECT_GROUP)
+        : 'DIRECT';
     const ruleLines = [
         '# 基础分流',
         'IP-CIDR,127.0.0.0/8,DIRECT',
@@ -384,7 +388,7 @@ resource-parser = https://raw.githubusercontent.com/sub-store-org/Sub-Store/mast
         'IP-CIDR,172.16.0.0/12,DIRECT',
         'IP-CIDR,192.168.0.0/16,DIRECT',
         ...builtinRuleLines,
-        `FINAL,${levelKey === 'RELAY' ? DEFAULT_RELAY_GROUP : DEFAULT_SELECT_GROUP}`
+        `FINAL,${defaultTarget}`
     ];
     sections.push(`[Rule]\n${ruleLines.filter(Boolean).join('\n')}`);
 

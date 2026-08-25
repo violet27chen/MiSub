@@ -104,15 +104,9 @@ function _generateRegionGroups(proxies, options = {}) {
  * 策略组工厂
  */
 export const POLICY_GROUPS = {
-    // 基础配置：精简版
-    BASE: (proxies, options = {}) => {
-        const proxyNames = proxies.map(p => p.tag || p.name);
-        return [
-            { name: DEFAULT_SELECT_GROUP, type: 'select', proxies: [AUTO_SELECT_GROUP, FALLBACK_GROUP, MANUAL_SELECT_GROUP, 'DIRECT'] },
-            { name: AUTO_SELECT_GROUP, type: 'url-test', proxies: proxyNames },
-            { name: FALLBACK_GROUP, type: 'fallback', proxies: proxyNames },
-            { name: MANUAL_SELECT_GROUP, type: 'select', proxies: proxyNames }
-        ];
+    // 基础配置：仅输出代理节点，不生成任何策略组
+    BASE: () => {
+        return [];
     },
     // 标准配置：全能型
     STD: (proxies, options = {}) => {
@@ -239,13 +233,7 @@ export const REMOTE_SOURCES = {
  * 分流规则集 (通过 RULE-SET 引用远程源)
  */
 export const RULE_SETS = {
-    BASE: [
-        `DOMAIN-SUFFIX,google.com,${DEFAULT_SELECT_GROUP}`,
-        `DOMAIN-KEYWORD,google,${DEFAULT_SELECT_GROUP}`,
-        `DOMAIN-SUFFIX,github.com,${DEFAULT_SELECT_GROUP}`,
-        'GEOIP,CN,DIRECT',
-        `MATCH,${DEFAULT_SELECT_GROUP}`
-    ],
+    BASE: [],
     STD: [
         'RULE-SET,ADS,🎬 视频广告',
         'RULE-SET,AI,🤖 智能 AI',

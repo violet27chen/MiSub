@@ -494,15 +494,19 @@ dns-server = 119.29.29.29, 223.5.5.5, system`);
 
     // Surge [Rule]
     const builtinRuleLines = getBuiltinRules(levelKey, 'surge');
+    const hasProxyGroups = abstractGroups.length > 0;
+    const defaultTarget = hasProxyGroups
+        ? (levelKey === 'RELAY' ? DEFAULT_RELAY_GROUP : DEFAULT_SELECT_GROUP)
+        : 'DIRECT';
     const ruleLines = [
         '# 基础分流',
         'DOMAIN-SUFFIX,localhost,DIRECT',
-        'IP-CIDR,127.0.0.1/8,DIRECT',
+        'IP-CIDR,127.0.0.0/8,DIRECT',
         'IP-CIDR,10.0.0.0/8,DIRECT',
         'IP-CIDR,172.16.0.0/12,DIRECT',
         'IP-CIDR,192.168.0.0/16,DIRECT',
         ...builtinRuleLines,
-        `FINAL,${levelKey === 'RELAY' ? DEFAULT_RELAY_GROUP : DEFAULT_SELECT_GROUP},dns-failed`
+        `FINAL,${defaultTarget},dns-failed`
     ];
     sections.push(`[Rule]\n${ruleLines.filter(Boolean).join('\n')}`);
 

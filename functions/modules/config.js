@@ -21,7 +21,7 @@ export const DEFAULT_SETTINGS = {
     profileToken: 'profiles',
     transformConfigMode: 'builtin',
     transformConfig: '',
-    ruleLevel: 'std',
+    ruleLevel: 'base',
     builtinSkipCertVerify: false,
     builtinEnableUdp: true,
     builtinLoonSkipCertVerify: false,

@@ -580,7 +580,7 @@ export async function handleMisubRequest(context) {
         : globalTemplateUrl;
     const templateSource = resolveTemplateSource(templateUrl);
 
-    // [逻辑统一] 规则等级：URL 参数 > 订阅组设置 > 全局设置 > 默认值 (std)
+    // [逻辑统一] 规则等级：URL 参数 > 订阅组设置 > 全局设置 > 默认值 (base)
     // [重要变更] 如果使用了远程自定义配置 (templateSource.kind === 'remote')，则完全禁用内置等级 (强制为 none)
     const resolvedProfileLevel = currentProfile?.ruleLevel || currentProfile?.clashRuleLevel || '';
     const resolvedGlobalLevel = config.ruleLevel || config.clashRuleLevel || 'std';
