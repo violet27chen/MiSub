@@ -135,18 +135,62 @@ export const POLICY_GROUPS = {
         });
         
         const subgroups = [];
+        const hiddenAutoGroups = [];
+        
         if (manualNodes.length > 0) {
-            subgroups.push({ name: '👋 手动节点', type: 'select', proxies: ['DIRECT', ...manualNodes] });
+            const autoGroupName = `⚡ 手动节点 - 自动测速`;
+            hiddenAutoGroups.push({
+                name: autoGroupName,
+                type: 'url-test',
+                hidden: true,
+                proxies: manualNodes,
+                url: 'http://www.gstatic.com/generate_204',
+                interval: 300,
+                tolerance: 50
+            });
+            subgroups.push({ 
+                name: '👋 手动节点', 
+                type: 'select', 
+                proxies: ['DIRECT', autoGroupName, ...manualNodes] 
+            });
         }
         
         for (const [subName, nodes] of Object.entries(subscriptionGroups)) {
             if (nodes.length > 0) {
-                subgroups.push({ name: `🚀 ${subName}`, type: 'select', proxies: ['DIRECT', ...nodes] });
+                const autoGroupName = `⚡ ${subName} - 自动测速`;
+                hiddenAutoGroups.push({
+                    name: autoGroupName,
+                    type: 'url-test',
+                    hidden: true,
+                    proxies: nodes,
+                    url: 'http://www.gstatic.com/generate_204',
+                    interval: 300,
+                    tolerance: 50
+                });
+                subgroups.push({ 
+                    name: `🚀 ${subName}`, 
+                    type: 'select', 
+                    proxies: ['DIRECT', autoGroupName, ...nodes] 
+                });
             }
         }
         
         if (unmatchedNodes.length > 0) {
-            subgroups.push({ name: '🚀 机场节点', type: 'select', proxies: ['DIRECT', ...unmatchedNodes] });
+            const autoGroupName = `⚡ 机场节点 - 自动测速`;
+            hiddenAutoGroups.push({
+                name: autoGroupName,
+                type: 'url-test',
+                hidden: true,
+                proxies: unmatchedNodes,
+                url: 'http://www.gstatic.com/generate_204',
+                interval: 300,
+                tolerance: 50
+            });
+            subgroups.push({ 
+                name: '🚀 机场节点', 
+                type: 'select', 
+                proxies: ['DIRECT', autoGroupName, ...unmatchedNodes] 
+            });
         }
 
         if (subgroups.length === 0) {
@@ -163,7 +207,7 @@ export const POLICY_GROUPS = {
             ]
         };
         
-        return [masterGroup, ...subgroups];
+        return [masterGroup, ...hiddenAutoGroups, ...subgroups];
     },
     // 标准配置：全能型
     STD: (proxies, options = {}) => {
