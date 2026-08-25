@@ -518,8 +518,13 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
             const shouldPrependSubscriptions = profilePrefixSettings?.enableSubscriptions ?? true;
             const shouldAddSubPrefix = shouldPrependSubscriptions && !skipPrefixDueToRenaming;
 
-            return (shouldAddSubPrefix && sub.name)
-                ? validNodes.map(node => prependNodeName(node, sub.name)).join('\n')
+            // [分组修复] 分组名回退：订阅名 → 分组名 → 订阅域名，确保 BASE 等级能按机场正确分组
+            let subGroupName = (typeof sub?.name === 'string' && sub.name.trim()) ? sub.name.trim()
+                : (typeof sub?.group === 'string' && sub.group.trim()) ? sub.group.trim()
+                : (() => { try { return new URL(sub.url).hostname; } catch { return ''; } })();
+
+            return (shouldAddSubPrefix && subGroupName)
+                ? validNodes.map(node => prependNodeName(node, subGroupName)).join('\n')
                 : validNodes.join('\n');
         } catch (e) {
             recordEmptyRuntimeInfo();

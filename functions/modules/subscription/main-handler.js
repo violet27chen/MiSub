@@ -780,7 +780,18 @@ export async function handleMisubRequest(context) {
                     regionOverrides: Array.isArray(config.regionOverrides) ? config.regionOverrides : [],
                     isMeta: isMetaCore(userAgentHeader, url.searchParams),
                     manualNodePrefix: effectivePrefixSettings.manualNodePrefix || '手动节点',
-                    targetMisubs: targetMisubs.map(sub => ({ id: sub.id, name: sub.name, url: sub.url }))
+                    healthCheckUrl: config.healthCheckUrl || 'http://www.gstatic.com/generate_204',
+                    manualNames: targetMisubs
+                        .filter(sub => !(typeof sub?.url === 'string' && sub.url.toLowerCase().startsWith('http')))
+                        .map(sub => (typeof sub?.name === 'string' ? sub.name.trim() : ''))
+                        .filter(Boolean),
+                    targetMisubs: targetMisubs.map(sub => {
+                        const isHttp = typeof sub?.url === 'string' && sub.url.toLowerCase().startsWith('http');
+                        const groupName = (typeof sub?.name === 'string' && sub.name.trim()) ? sub.name.trim()
+                            : (typeof sub?.group === 'string' && sub.group.trim()) ? sub.group.trim()
+                            : (isHttp ? (() => { try { return new URL(sub.url).hostname; } catch { return ''; } })() : '');
+                        return { id: sub.id, name: sub.name, group: sub.group, url: sub.url, groupName, isManual: !isHttp };
+                    })
                 };
                 const rendered = await ProcessorService.renderOutput({
                     targetFormat,
@@ -920,7 +931,18 @@ export async function handleMisubRequest(context) {
         regionOverrides: Array.isArray(config.regionOverrides) ? config.regionOverrides : [],
         isMeta: isMetaCore(userAgentHeader, url.searchParams),
         manualNodePrefix: effectivePrefixSettings.manualNodePrefix || '手动节点',
-        targetMisubs: targetMisubs.map(sub => ({ id: sub.id, name: sub.name, url: sub.url }))
+        healthCheckUrl: config.healthCheckUrl || 'http://www.gstatic.com/generate_204',
+        manualNames: targetMisubs
+            .filter(sub => !(typeof sub?.url === 'string' && sub.url.toLowerCase().startsWith('http')))
+            .map(sub => (typeof sub?.name === 'string' ? sub.name.trim() : ''))
+            .filter(Boolean),
+        targetMisubs: targetMisubs.map(sub => {
+            const isHttp = typeof sub?.url === 'string' && sub.url.toLowerCase().startsWith('http');
+            const groupName = (typeof sub?.name === 'string' && sub.name.trim()) ? sub.name.trim()
+                : (typeof sub?.group === 'string' && sub.group.trim()) ? sub.group.trim()
+                : (isHttp ? (() => { try { return new URL(sub.url).hostname; } catch { return ''; } })() : '');
+            return { id: sub.id, name: sub.name, group: sub.group, url: sub.url, groupName, isManual: !isHttp };
+        })
     };
 
     const managedConfigUrl = buildManagedConfigUrl(request.url);

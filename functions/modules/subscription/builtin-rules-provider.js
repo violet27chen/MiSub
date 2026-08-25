@@ -70,6 +70,7 @@ export function pruneProxyGroups(proxyGroups, proxies) {
  * 内部辅助：生成地区相关的策略组定义
  */
 function _generateRegionGroups(proxies, options = {}) {
+    const healthCheckUrl = options.healthCheckUrl || 'http://www.gstatic.com/generate_204';
     const regions = generateRegionData(proxies, options);
     const regionSelectGroups = [];   // 地区选择组（顶级按钮）
     const regionSupportGroups = []; // 地区辅助组（隐藏/末尾）
@@ -93,7 +94,7 @@ function _generateRegionGroups(proxies, options = {}) {
             type: 'url-test', 
             proxies: r.tags,
             hidden: true,
-            options: { url: 'http://www.gstatic.com/generate_204', interval: 300, tolerance: 50 }
+            options: { url: healthCheckUrl, interval: 300, tolerance: 50 }
         });
     });
 
@@ -108,6 +109,8 @@ export const POLICY_GROUPS = {
     BASE: (proxies, options = {}) => {
         const manualPrefix = options.manualNodePrefix || '手动节点';
         const targetMisubs = Array.isArray(options.targetMisubs) ? options.targetMisubs : [];
+        const manualNames = Array.isArray(options.manualNames) ? options.manualNames : [];
+        const healthCheckUrl = options.healthCheckUrl || 'http://www.gstatic.com/generate_204';
         
         const manualNodes = [];
         const subscriptionGroups = {};
@@ -119,16 +122,19 @@ export const POLICY_GROUPS = {
             
             const isManualByPrefix = name.startsWith(manualPrefix);
             const isManualByDefault = manualPrefix !== '手动节点' && name.startsWith('手动节点');
-            if (isManualByPrefix || isManualByDefault) {
+            const isManualByName = manualNames.includes(name);
+            if (isManualByPrefix || isManualByDefault || isManualByName) {
                 manualNodes.push(name);
             } else {
                 const matchedSub = targetMisubs.find(sub => {
-                    const subName = typeof sub?.name === 'string' ? sub.name.trim() : '';
+                    const subName = (typeof sub?.groupName === 'string' && sub.groupName.trim()) ? sub.groupName.trim()
+                        : (typeof sub?.name === 'string' ? sub.name.trim() : '');
                     if (!subName) return false;
                     return name.startsWith(subName);
                 });
                 if (matchedSub) {
-                    const subName = matchedSub.name.trim();
+                    const subName = (typeof matchedSub?.groupName === 'string' && matchedSub.groupName.trim()) ? matchedSub.groupName.trim()
+                        : String(matchedSub.name || '').trim();
                     if (!subscriptionGroups[subName]) {
                         subscriptionGroups[subName] = [];
                     }
@@ -149,7 +155,7 @@ export const POLICY_GROUPS = {
                 type: 'url-test',
                 hidden: true,
                 proxies: manualNodes,
-                url: 'http://www.gstatic.com/generate_204',
+                url: healthCheckUrl,
                 interval: 300,
                 tolerance: 50
             });
@@ -168,7 +174,7 @@ export const POLICY_GROUPS = {
                     type: 'url-test',
                     hidden: true,
                     proxies: nodes,
-                    url: 'http://www.gstatic.com/generate_204',
+                    url: healthCheckUrl,
                     interval: 300,
                     tolerance: 50
                 });
@@ -187,7 +193,7 @@ export const POLICY_GROUPS = {
                 type: 'url-test',
                 hidden: true,
                 proxies: unmatchedNodes,
-                url: 'http://www.gstatic.com/generate_204',
+                url: healthCheckUrl,
                 interval: 300,
                 tolerance: 50
             });

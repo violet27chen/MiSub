@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS = {
     transformConfigMode: 'builtin',
     transformConfig: '',
     ruleLevel: 'base',
+    healthCheckUrl: 'http://www.gstatic.com/generate_204',
     builtinSkipCertVerify: false,
     builtinEnableUdp: true,
     builtinLoonSkipCertVerify: false,
