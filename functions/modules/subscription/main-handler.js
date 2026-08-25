@@ -779,7 +779,8 @@ export async function handleMisubRequest(context) {
                     ruleLevel,
                     regionOverrides: Array.isArray(config.regionOverrides) ? config.regionOverrides : [],
                     isMeta: isMetaCore(userAgentHeader, url.searchParams),
-                    manualNodePrefix: effectivePrefixSettings.manualNodePrefix || '手动节点'
+                    manualNodePrefix: effectivePrefixSettings.manualNodePrefix || '手动节点',
+                    targetMisubs: targetMisubs.map(sub => ({ id: sub.id, name: sub.name, url: sub.url }))
                 };
                 const rendered = await ProcessorService.renderOutput({
                     targetFormat,
@@ -918,7 +919,8 @@ export async function handleMisubRequest(context) {
         ruleLevel: ruleLevel, // 统一后的规则等级
         regionOverrides: Array.isArray(config.regionOverrides) ? config.regionOverrides : [],
         isMeta: isMetaCore(userAgentHeader, url.searchParams),
-        manualNodePrefix: effectivePrefixSettings.manualNodePrefix || '手动节点'
+        manualNodePrefix: effectivePrefixSettings.manualNodePrefix || '手动节点',
+        targetMisubs: targetMisubs.map(sub => ({ id: sub.id, name: sub.name, url: sub.url }))
     };
 
     const managedConfigUrl = buildManagedConfigUrl(request.url);

@@ -104,29 +104,50 @@ function _generateRegionGroups(proxies, options = {}) {
  * 策略组工厂
  */
 export const POLICY_GROUPS = {
-    // 基础配置：机场节点一个分组，手动节点一个分组，不做国家/地区/业务拆分
+    // 基础配置：按机场分组，手动节点统一一个分组
     BASE: (proxies, options = {}) => {
         const manualPrefix = options.manualNodePrefix || '手动节点';
-        const subscriptionNodes = [];
+        const targetMisubs = Array.isArray(options.targetMisubs) ? options.targetMisubs : [];
+        
         const manualNodes = [];
-
+        const subscriptionGroups = {};
+        const unmatchedNodes = [];
+        
         proxies.forEach(p => {
             const name = p.tag || p.name || '';
             if (name.startsWith(manualPrefix)) {
                 manualNodes.push(name);
             } else {
-                subscriptionNodes.push(name);
+                const matchedSub = targetMisubs.find(sub => 
+                    typeof sub?.name === 'string' && sub.name.trim() !== '' && name.startsWith(sub.name)
+                );
+                if (matchedSub) {
+                    const subName = matchedSub.name.trim();
+                    if (!subscriptionGroups[subName]) {
+                        subscriptionGroups[subName] = [];
+                    }
+                    subscriptionGroups[subName].push(name);
+                } else {
+                    unmatchedNodes.push(name);
+                }
             }
         });
-
+        
         const groups = [];
-        if (subscriptionNodes.length > 0) {
-            groups.push({ name: '🚀 机场节点', type: 'select', proxies: ['DIRECT', ...subscriptionNodes] });
-        }
         if (manualNodes.length > 0) {
             groups.push({ name: '👋 手动节点', type: 'select', proxies: ['DIRECT', ...manualNodes] });
         }
-
+        
+        for (const [subName, nodes] of Object.entries(subscriptionGroups)) {
+            if (nodes.length > 0) {
+                groups.push({ name: `🚀 ${subName}`, type: 'select', proxies: ['DIRECT', ...nodes] });
+            }
+        }
+        
+        if (unmatchedNodes.length > 0) {
+            groups.push({ name: '🚀 机场节点', type: 'select', proxies: ['DIRECT', ...unmatchedNodes] });
+        }
+        
         return groups;
     },
     // 标准配置：全能型
@@ -254,9 +275,7 @@ export const REMOTE_SOURCES = {
  * 分流规则集 (通过 RULE-SET 引用远程源)
  */
 export const RULE_SETS = {
-    BASE: [
-        `MATCH,${DEFAULT_SELECT_GROUP}`
-    ],
+    BASE: [],
     STD: [
         'RULE-SET,ADS,🎬 视频广告',
         'RULE-SET,AI,🤖 智能 AI',
