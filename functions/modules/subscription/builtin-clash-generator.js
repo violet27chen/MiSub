@@ -173,7 +173,18 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
         const policyGroupsFactory = POLICY_GROUPS[levelKey] || POLICY_GROUPS.STD;
         let proxyGroups = policyGroupsFactory(proxies, options);
         proxyGroups = pruneProxyGroups(proxyGroups, proxies);
-        
+
+        // [展示优化] 手动节点已在 👋 手动节点 / 🚀 {分组} 组内，节点名再带 "手动节点 - " 前缀冗余，
+        // 从节点名和分组引用中统一剥掉。分组/prune 已在上游执行，此处只改展示名。
+        const manualPrefix = (options.manualNodePrefix || '手动节点').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const manualPrefixPattern = new RegExp(`^${manualPrefix}\\s*-\\s*`);
+        const stripManualNodeName = (name) => String(name || '').replace(manualPrefixPattern, '');
+        proxies.forEach(p => { if (p && typeof p.name === 'string') p.name = stripManualNodeName(p.name); });
+        proxyGroups = proxyGroups.map(g => ({
+            ...g,
+            proxies: (Array.isArray(g.proxies) ? g.proxies : []).map(stripManualNodeName)
+        }));
+
         const defaultTarget = proxyGroups[0]?.name || DEFAULT_SELECT_GROUP;
         let rawRules = isHiddifyClient
             ? [`MATCH,${defaultTarget}`]
