@@ -488,6 +488,19 @@ const prependGroupName = profilePrefixSettings?.prependGroupName ?? false;
 
             let validNodes = fallbackParsedObjects.map(node => node.url);
 
+            // [跨实例导入兼容] 从其他 MiSub 实例导入的手动节点可能带有 "手动节点 - " 前缀，
+            // 在作为订阅被重新分组前剥掉，避免输出变成 "机场名 - 手动节点 - xxx"。
+            const manualNodePrefix = profilePrefixSettings?.manualNodePrefix || '手动节点';
+            const escapedManualPrefix = manualNodePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const manualPrefixPattern = new RegExp(`^${escapedManualPrefix}\\s*-\\s*`);
+            validNodes = validNodes.map(url => {
+                const hashIdx = url.indexOf('#');
+                if (hashIdx === -1) return url;
+                const before = url.slice(0, hashIdx + 1);
+                const after = url.slice(hashIdx + 1).replace(manualPrefixPattern, '');
+                return before + after;
+            });
+
             // --- 统一转换治理 (算子 + 过滤 + 组级诊断) ---
             validNodes = await applySubscriptionTransforms(validNodes, sub);
 
