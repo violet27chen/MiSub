@@ -175,10 +175,13 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
         proxyGroups = pruneProxyGroups(proxyGroups, proxies);
 
         // [展示优化] 手动节点已在 👋 手动节点 / 🚀 {分组} 组内，节点名再带 "手动节点 - " 前缀冗余，
-        // 从节点名和分组引用中统一剥掉。分组/prune 已在上游执行，此处只改展示名。
-        const manualPrefix = (options.manualNodePrefix || '手动节点').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const manualPrefixPattern = new RegExp(`^${manualPrefix}\\s*-\\s*`);
-        const stripManualNodeName = (name) => String(name || '').replace(manualPrefixPattern, '');
+        // 从节点名和分组引用中统一按段过滤掉，不管它出现在开头还是中间（例如 "机场名 - 手动节点 - 实际名"）。
+        const manualPrefix = (options.manualNodePrefix || '手动节点').trim();
+        const stripManualNodeName = (name) => {
+            const parts = String(name || '').split(' - ');
+            const filtered = parts.filter(p => p !== manualPrefix);
+            return filtered.join(' - ');
+        };
         proxies.forEach(p => { if (p && typeof p.name === 'string') p.name = stripManualNodeName(p.name); });
         proxyGroups = proxyGroups.map(g => ({
             ...g,
