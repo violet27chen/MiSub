@@ -309,6 +309,17 @@ watch(
             </select>
           </div>
 
+          <div class="mt-3">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{{ t('settings.subscriptionLinkExpiryHours') }}</label>
+            <input
+              type="number"
+              min="0"
+              v-model="localProfile.subscriptionLinkExpiryHours"
+              class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 misub-radius-md sm:text-sm dark:text-white"
+            />
+            <p class="mt-1 text-[10px] text-gray-400">{{ t('settings.subscriptionLinkExpiryHint') }}</p>
+          </div>
+
           <!-- 节点前缀设置 (合并) -->
           <div class="sm:col-span-2 space-y-3 pt-2 border-t border-gray-50 dark:border-gray-700/50">
              <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">{{ t('profileModal.nodeNameVisibility') }}</label>
