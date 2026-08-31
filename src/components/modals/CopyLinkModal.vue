@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import Modal from '../forms/Modal.vue';
 import { useToastStore } from '@/stores/toast';
 import { useI18n } from '@/i18n/index.js';
@@ -38,58 +38,16 @@ const clients = computed(() => [
   { name: 'Quantumult X', type: 'quanx', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 002 2v10a2 2 0 002 2z', format: '?quanx' },
 ]);
 
-const presets = [
-  { label: t('settings.preset15m'), minutes: 15 },
-  { label: t('settings.preset30m'), minutes: 30 },
-  { label: t('settings.preset1h'), minutes: 60 },
-  { label: t('settings.preset3h'), minutes: 180 },
-  { label: t('settings.preset6h'), minutes: 360 },
-  { label: t('settings.preset12h'), minutes: 720 },
-  { label: t('settings.preset1d'), minutes: 1440 },
-  { label: t('settings.preset3d'), minutes: 4320 },
-  { label: t('settings.preset7d'), minutes: 10080 },
-  { label: t('settings.preset30d'), minutes: 43200 },
-];
-
-const selectedPreset = ref(null);
-const customMinutes = ref(60);
-const customUnit = ref('minutes');
-const customActive = ref(false);
-
 const profileExpiryHours = computed(() => Number(props.profile?.subscriptionLinkExpiryHours || 0));
-
-const expiryMinutes = computed(() => {
-  if (customActive.value) {
-    const factor = customUnit.value === 'hours' ? 60 : customUnit.value === 'days' ? 1440 : 1;
-    return (customMinutes.value || 0) * factor;
-  }
-  return selectedPreset.value || 0;
-});
-
-const selectPreset = (minutes) => {
-  selectedPreset.value = minutes;
-  customActive.value = false;
-};
-
-const disableExpiry = () => {
-  selectedPreset.value = null;
-  customActive.value = false;
-};
-
-const enableCustom = () => {
-  customActive.value = true;
-  if (!customMinutes.value) customMinutes.value = 60;
-};
 
 const buildLink = (format) => {
   if (!baseUrl.value) {
     showToast(t('settings.copyLinkConfigureToken'), 'error');
     return '';
   }
-  const expiresParam = expiryMinutes.value > 0
-    ? `&expires=${Math.floor(Date.now() / 1000) + expiryMinutes.value * 60}`
+  const expiresParam = profileExpiryHours.value > 0
+    ? `&expires=${Math.floor(Date.now() / 1000) + profileExpiryHours.value * 3600}`
     : '';
-
   if (format) return `${baseUrl.value}${format}${expiresParam}`;
   if (expiresParam) return `${baseUrl.value}?${expiresParam.slice(1)}`;
   return baseUrl.value;
@@ -147,58 +105,6 @@ const fallbackCopy = (link) => {
           {{ t('settings.copyLinkModalDesc') }}
         </p>
 
-        <div class="rounded-lg border border-gray-200/70 dark:border-white/10 bg-gray-50/60 dark:bg-white/5 p-3">
-          <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.copyLinkExpiryLabel') }}</p>
-          <div class="flex flex-wrap gap-2 mb-2">
-            <button
-              v-for="preset in presets"
-              :key="preset.minutes"
-              type="button"
-              @click="selectPreset(preset.minutes)"
-              :class="(!customActive && selectedPreset === preset.minutes) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
-              class="px-2.5 py-1.5 rounded-md border text-xs transition-colors"
-            >
-              {{ preset.label }}
-            </button>
-            <button
-              type="button"
-              @click="disableExpiry"
-              :class="(selectedPreset === null && !customActive) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
-              class="px-2.5 py-1.5 rounded-md border text-xs transition-colors"
-            >
-              {{ t('settings.copyLinkDisabled') }}
-            </button>
-          </div>
-          <div class="flex items-center gap-2">
-            <input
-              type="number"
-              min="0"
-              v-model="customMinutes"
-              @focus="enableCustom"
-              class="w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-            />
-            <select
-              v-model="customUnit"
-              class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-            >
-              <option value="minutes">{{ t('settings.minutes') }}</option>
-              <option value="hours">{{ t('settings.hours') }}</option>
-              <option value="days">{{ t('settings.days') }}</option>
-            </select>
-            <button
-              type="button"
-              @click="enableCustom"
-              :class="customActive ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
-              class="px-3 py-2 text-xs font-medium rounded-lg border transition-colors"
-            >
-              {{ t('settings.copyLinkUseCustom') }}
-            </button>
-          </div>
-          <p v-if="profileExpiryHours > 0" class="mt-1.5 text-[10px] text-gray-400">
-            {{ t('settings.copyLinkProfileDefault', { hours: profileExpiryHours }) }}
-          </p>
-        </div>
-
         <div
           v-for="client in clients"
           :key="client.type"
@@ -213,6 +119,9 @@ const fallbackCopy = (link) => {
             </div>
             <div>
               <p class="font-medium text-gray-900 dark:text-gray-100 group-hover:text-primary-700 dark:group-hover:text-primary-300">{{ client.name }}</p>
+              <p v-if="profileExpiryHours > 0" class="text-[10px] text-gray-400 mt-0.5">
+                {{ t('settings.copyLinkProfileDefault', { hours: profileExpiryHours }) }}
+              </p>
             </div>
           </div>
 
