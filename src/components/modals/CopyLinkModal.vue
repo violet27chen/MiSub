@@ -39,16 +39,16 @@ const clients = computed(() => [
 ]);
 
 const presets = [
-  { label: t('copyLink.preset15m'), minutes: 15 },
-  { label: t('copyLink.preset30m'), minutes: 30 },
-  { label: t('copyLink.preset1h'), minutes: 60 },
-  { label: t('copyLink.preset3h'), minutes: 180 },
-  { label: t('copyLink.preset6h'), minutes: 360 },
-  { label: t('copyLink.preset12h'), minutes: 720 },
-  { label: t('copyLink.preset1d'), minutes: 1440 },
-  { label: t('copyLink.preset3d'), minutes: 4320 },
-  { label: t('copyLink.preset7d'), minutes: 10080 },
-  { label: t('copyLink.preset30d'), minutes: 43200 },
+  { label: t('settings.preset15m'), minutes: 15 },
+  { label: t('settings.preset30m'), minutes: 30 },
+  { label: t('settings.preset1h'), minutes: 60 },
+  { label: t('settings.preset3h'), minutes: 180 },
+  { label: t('settings.preset6h'), minutes: 360 },
+  { label: t('settings.preset12h'), minutes: 720 },
+  { label: t('settings.preset1d'), minutes: 1440 },
+  { label: t('settings.preset3d'), minutes: 4320 },
+  { label: t('settings.preset7d'), minutes: 10080 },
+  { label: t('settings.preset30d'), minutes: 43200 },
 ];
 
 const selectedPreset = ref(null);
@@ -123,11 +123,11 @@ const fallbackCopy = (link) => {
     <template #body>
       <div class="mt-2 space-y-4">
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          {{ t('copyLinkModalDesc') }}
+          {{ t('settings.copyLinkModalDesc') }}
         </p>
 
         <div class="rounded-lg border border-gray-200/70 dark:border-white/10 bg-gray-50/60 dark:bg-white/5 p-3">
-          <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('copyLinkExpiryLabel') }}</p>
+          <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('settings.copyLinkExpiryLabel') }}</p>
           <div class="flex flex-wrap gap-2 mb-2">
             <button
               v-for="preset in presets"
@@ -145,7 +145,7 @@ const fallbackCopy = (link) => {
               :class="selectedPreset === null ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
               class="px-2.5 py-1.5 rounded-md border text-xs transition-colors"
             >
-              {{ t('copyLinkDisabled') }}
+              {{ t('settings.copyLinkDisabled') }}
             </button>
           </div>
           <div class="flex items-center gap-2">
@@ -168,11 +168,11 @@ const fallbackCopy = (link) => {
               @click="selectedPreset = null"
               class="px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-400 transition-colors"
             >
-              {{ t('copyLinkUseCustom') }}
+              {{ t('settings.copyLinkUseCustom') }}
             </button>
           </div>
           <p v-if="profileExpiryHours > 0" class="mt-1.5 text-[10px] text-gray-400">
-            {{ t('copyLinkProfileDefault', { hours: profileExpiryHours }) }}
+            {{ t('settings.copyLinkProfileDefault', { hours: profileExpiryHours }) }}
           </p>
         </div>
 
