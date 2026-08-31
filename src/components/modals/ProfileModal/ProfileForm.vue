@@ -311,12 +311,22 @@ watch(
 
           <div class="mt-3">
             <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{{ t('settings.subscriptionLinkExpiryHours') }}</label>
-            <input
-              type="number"
-              min="0"
-              v-model="localProfile.subscriptionLinkExpiryHours"
-              class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 misub-radius-md sm:text-sm dark:text-white"
-            />
+            <div class="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                v-model="localProfile.subscriptionLinkExpiryValue"
+                class="block w-24 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 misub-radius-md sm:text-sm dark:text-white"
+              />
+              <select
+                v-model="localProfile.subscriptionLinkExpiryUnit"
+                class="block px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 misub-radius-md sm:text-sm dark:text-white"
+              >
+                <option value="minutes">{{ t('settings.minutes') }}</option>
+                <option value="hours">{{ t('settings.hours') }}</option>
+                <option value="days">{{ t('settings.days') }}</option>
+              </select>
+            </div>
             <p class="mt-1 text-[10px] text-gray-400">{{ t('settings.subscriptionLinkExpiryHint') }}</p>
           </div>
 

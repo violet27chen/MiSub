@@ -461,10 +461,12 @@ export async function handleMisubRequest(context) {
             } else {
                 subName = profile.name;
 
-                // [订阅链接过期] 若该 profile 启用了 subscriptionLinkExpiryHours，所有请求都必须带有效 expires 参数，
+                // [订阅链接过期] 若该 profile 启用了订阅链接过期，所有请求都必须带有效 expires 参数，
                 // 否则直接拒绝，防止被盗用后长期有效。
-                const profileExpiryHours = Number(profile?.subscriptionLinkExpiryHours || 0);
-                if (profileExpiryHours > 0) {
+                const profileExpiryValue = Number(profile?.subscriptionLinkExpiryValue || 0);
+                const profileExpiryUnit = profile?.subscriptionLinkExpiryUnit || 'hours';
+                if (profileExpiryValue > 0) {
+                    const factor = profileExpiryUnit === 'hours' ? 3600 : profileExpiryUnit === 'days' ? 86400 : 60;
                     const expiresAt = parseInt(url.searchParams.get('expires'), 10);
                     if (!Number.isFinite(expiresAt) || expiresAt < Math.floor(Date.now() / 1000)) {
                         return new Response('Subscription link expired', { status: 403 });

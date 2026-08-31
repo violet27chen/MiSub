@@ -38,15 +38,17 @@ const clients = computed(() => [
   { name: 'Quantumult X', type: 'quanx', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 002 2v10a2 2 0 002 2z', format: '?quanx' },
 ]);
 
-const profileExpiryHours = computed(() => Number(props.profile?.subscriptionLinkExpiryHours || 0));
+const profileExpiryValue = computed(() => Number(props.profile?.subscriptionLinkExpiryValue || 0));
+const profileExpiryUnit = computed(() => props.profile?.subscriptionLinkExpiryUnit || 'hours');
 
 const buildLink = (format) => {
   if (!baseUrl.value) {
     showToast(t('settings.copyLinkConfigureToken'), 'error');
     return '';
   }
-  const expiresParam = profileExpiryHours.value > 0
-    ? `&expires=${Math.floor(Date.now() / 1000) + profileExpiryHours.value * 3600}`
+  const factor = profileExpiryUnit.value === 'hours' ? 3600 : profileExpiryUnit.value === 'days' ? 86400 : 60;
+  const expiresParam = profileExpiryValue.value > 0
+    ? `&expires=${Math.floor(Date.now() / 1000) + profileExpiryValue.value * factor}`
     : '';
   if (format) return `${baseUrl.value}${format}${expiresParam}`;
   if (expiresParam) return `${baseUrl.value}?${expiresParam.slice(1)}`;
@@ -119,8 +121,8 @@ const fallbackCopy = (link) => {
             </div>
             <div>
               <p class="font-medium text-gray-900 dark:text-gray-100 group-hover:text-primary-700 dark:group-hover:text-primary-300">{{ client.name }}</p>
-              <p v-if="profileExpiryHours > 0" class="text-[10px] text-gray-400 mt-0.5">
-                {{ t('settings.copyLinkProfileDefault', { hours: profileExpiryHours }) }}
+              <p v-if="profileExpiryValue > 0" class="text-[10px] text-gray-400 mt-0.5">
+                {{ t('settings.copyLinkProfileDefault', { hours: profileExpiryValue + ' ' + profileExpiryUnit }) }}
               </p>
             </div>
           </div>
