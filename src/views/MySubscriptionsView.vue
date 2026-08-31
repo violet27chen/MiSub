@@ -106,6 +106,28 @@ const handleQRCode = (profileId) => {
     showQRCodeModal.value = true;
   }
 };
+
+  // 复制订阅组二次确认
+  const showDuplicateConfirm = ref(false);
+  const duplicateTargetId = ref(null);
+  const duplicateTargetName = ref('');
+
+  const openDuplicateConfirm = (profileId) => {
+    const profile = profiles.value.find(p => p.id === profileId || p.customId === profileId);
+    if (!profile) return;
+    duplicateTargetId.value = profileId;
+    duplicateTargetName.value = profile.name;
+    showDuplicateConfirm.value = true;
+  };
+
+  const confirmDuplicate = () => {
+    if (duplicateTargetId.value) {
+      handleDuplicateProfile(duplicateTargetId.value);
+    }
+    showDuplicateConfirm.value = false;
+    duplicateTargetId.value = null;
+    duplicateTargetName.value = '';
+  };
 </script>
 
 <template>
@@ -115,7 +137,7 @@ const handleQRCode = (profileId) => {
     <ProfilePanel :profiles="profiles" :paginated-profiles="paginatedProfiles" :current-page="profilesCurrentPage"
       :total-pages="profilesTotalPages" :is-sorting="isProfileSorting" @add="handleAddProfile" @edit="handleEditProfile" @delete="handleDeleteProfile"
       @deleteAll="showDeleteProfilesModal = true" @toggle="handleProfileToggle" @openCopy="handleOpenCopy"
-      @preview="handlePreviewProfile" @duplicate="handleDuplicateProfile" @reorder="handleProfileReorder" @toggle-sort="toggleProfileSorting"
+      @preview="handlePreviewProfile" @duplicate="openDuplicateConfirm" @reorder="handleProfileReorder" @toggle-sort="toggleProfileSorting"
       @change-page="changeProfilesPage" @viewLogs="handleViewLogs" @qrcode="handleQRCode" />
 
     <LogModal :show="showLogModal" @update:show="showLogModal = $event" :filter-profile-name="logProfileName" />
@@ -140,5 +162,14 @@ const handleQRCode = (profileId) => {
     <QRCodeModal v-model:show="showQRCodeModal" :url="qrCodeUrl" :title="qrCodeTitle" />
     
     <CopyLinkModal v-if="showCopyModal && showCopyModalProfile" v-model:show="showCopyModal" :profile="showCopyModalProfile" :token="settings?.profileToken" :config="settings" />
+
+    <Modal v-model:show="showDuplicateConfirm" size="sm" @confirm="confirmDuplicate">
+      <template #title>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ t('profiles.duplicateConfirmTitle') }}</h3>
+      </template>
+      <template #body>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('profiles.duplicateConfirmBody', { name: duplicateTargetName }) }}</p>
+      </template>
+    </Modal>
   </div>
 </template>

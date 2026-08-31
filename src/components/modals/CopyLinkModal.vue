@@ -96,7 +96,7 @@ const fallbackCopy = (link) => {
 </script>
 
 <template>
-  <Modal :show="show" @update:show="close" :show-cancel="false" :show-confirm="false">
+  <Modal :show="show" @update:show="close" :show-cancel="false" :show-confirm="false" size="2xl">
     <template #title>
       <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('settings.copyLinkModalTitle') }}</h3>
     </template>

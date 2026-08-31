@@ -134,15 +134,15 @@ const {
           tabindex="-1"
           class="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl misub-radius-lg shadow-2xl w-full text-left ring-1 ring-black/5 dark:ring-white/10 flex flex-col max-h-[85vh] lg:max-h-[90vh] border border-white/20 dark:border-white/5 focus:outline-none"
           :class="{
-            'max-w-sm': size === 'sm',
-            'max-w-md': size === 'md',
-            'max-w-lg': size === 'lg',
-            'max-w-xl': size === 'xl',
-            'max-w-2xl': size === '2xl',
-            'max-w-4xl': size === '4xl',
-            'max-w-5xl': size === '5xl',
-            'max-w-6xl': size === '6xl',
-            'max-w-7xl': size === '7xl'
+            'max-w-[92vw] sm:max-w-sm': size === 'sm',
+            'max-w-[92vw] sm:max-w-md': size === 'md',
+            'max-w-[92vw] sm:max-w-lg': size === 'lg',
+            'max-w-[92vw] sm:max-w-xl': size === 'xl',
+            'max-w-[92vw] sm:max-w-2xl': size === '2xl',
+            'max-w-[92vw] sm:max-w-4xl': size === '4xl',
+            'max-w-[92vw] sm:max-w-5xl': size === '5xl',
+            'max-w-[92vw] sm:max-w-6xl': size === '6xl',
+            'max-w-[92vw] sm:max-w-7xl': size === '7xl'
           }" @click.stop>
           <div :id="titleId" class="p-6 pb-4 shrink-0">
             <slot name="title">
