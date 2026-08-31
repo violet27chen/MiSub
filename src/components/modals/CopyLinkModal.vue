@@ -89,7 +89,10 @@ const buildLink = (format) => {
   const expiresParam = expiryMinutes.value > 0
     ? `&expires=${Math.floor(Date.now() / 1000) + expiryMinutes.value * 60}`
     : '';
-  return `${baseUrl.value}${format}${expiresParam}`;
+
+  if (format) return `${baseUrl.value}${format}${expiresParam}`;
+  if (expiresParam) return `${baseUrl.value}?${expiresParam.slice(1)}`;
+  return baseUrl.value;
 };
 
 const copyToClipboard = async (format) => {
