@@ -116,15 +116,15 @@ const expiryPresets = [
 ];
 
 const setExpiryPreset = (value) => {
-  localProfile.value.subscriptionLinkExpiryValue = value;
-  if (!localProfile.value.subscriptionLinkExpiryUnit) {
-    localProfile.value.subscriptionLinkExpiryUnit = 'minutes';
+  props.localProfile.subscriptionLinkExpiryValue = value;
+  if (!props.localProfile.subscriptionLinkExpiryUnit) {
+    props.localProfile.subscriptionLinkExpiryUnit = 'minutes';
   }
 };
 
 const isActivePreset = (value) => {
-  const current = Number(localProfile.value.subscriptionLinkExpiryValue || 0);
-  const unit = localProfile.value.subscriptionLinkExpiryUnit || 'minutes';
+  const current = Number(props.localProfile.subscriptionLinkExpiryValue || 0);
+  const unit = props.localProfile.subscriptionLinkExpiryUnit || 'minutes';
   const factor = unit === 'hours' ? 60 : unit === 'days' ? 1440 : 1;
   return current > 0 && current * factor === value;
 };
