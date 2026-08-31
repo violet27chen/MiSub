@@ -106,6 +106,29 @@ watch(
   { immediate: true }
 );
 
+const expiryPresets = [
+  { label: '15分钟', value: 15 },
+  { label: '30分钟', value: 30 },
+  { label: '1小时', value: 60 },
+  { label: '6小时', value: 360 },
+  { label: '1天', value: 1440 },
+  { label: '7天', value: 10080 },
+];
+
+const setExpiryPreset = (value) => {
+  localProfile.value.subscriptionLinkExpiryValue = value;
+  if (!localProfile.value.subscriptionLinkExpiryUnit) {
+    localProfile.value.subscriptionLinkExpiryUnit = 'minutes';
+  }
+};
+
+const isActivePreset = (value) => {
+  const current = Number(localProfile.value.subscriptionLinkExpiryValue || 0);
+  const unit = localProfile.value.subscriptionLinkExpiryUnit || 'minutes';
+  const factor = unit === 'hours' ? 60 : unit === 'days' ? 1440 : 1;
+  return current > 0 && current * factor === value;
+};
+
 </script>
 
 <template>
@@ -310,7 +333,19 @@ watch(
           </div>
 
           <div class="mt-3">
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{{ t('settings.subscriptionLinkExpiryHours') }}</label>
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{{ t('settings.subscriptionLinkExpiryValue') }}</label>
+            <div class="flex flex-wrap gap-2 mb-2">
+              <button
+                v-for="preset in expiryPresets"
+                :key="preset.value"
+                type="button"
+                @click="setExpiryPreset(preset.value)"
+                :class="isActivePreset(preset.value) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
+                class="px-2.5 py-1.5 rounded-md border text-xs transition-colors"
+              >
+                {{ preset.label }}
+              </button>
+            </div>
             <div class="flex items-center gap-2">
               <input
                 type="number"
