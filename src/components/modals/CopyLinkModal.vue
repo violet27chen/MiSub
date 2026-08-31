@@ -36,13 +36,15 @@ const clients = computed(() => [
   { name: 'Quantumult X', type: 'quanx', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', format: '?quanx' },
 ]);
 
-const copyToClipboard = async (format) => {
-  if (!baseUrl.value) {
-    showToast('请在设置中配置一个固定的"订阅组分享Token"', 'error');
-    return;
-  }
-  
-  const link = `${baseUrl.value}${format}`;
+  const copyToClipboard = async (format) => {
+    if (!baseUrl.value) {
+      showToast('请在设置中配置一个固定的"订阅组分享Token"', 'error');
+      return;
+    }
+    
+    const expiryHours = Number(props.config?.subscriptionLinkExpiryHours || 0);
+    const expiresParam = expiryHours > 0 ? `&expires=${Math.floor(Date.now() / 1000) + expiryHours * 3600}` : '';
+    const link = `${baseUrl.value}${format}${expiresParam}`;
 
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {

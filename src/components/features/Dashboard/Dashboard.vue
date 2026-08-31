@@ -533,6 +533,7 @@ import SavePrompt from '../../ui/SavePrompt.vue';
     v-model:show="showCopyModal" 
     :profile="showCopyModalProfile" 
     :token="settings?.profileToken" 
+    :config="settings"
   />
 </template>
 

@@ -39,6 +39,7 @@ export const DEFAULT_SETTINGS = {
     subscriptionCacheExpireMinutes: 60, // 订阅缓存过期时间（分钟）
     enableTrafficMonitor: true,        // 启用流量监控
     enableTemplateEngine: true,        // 启用模板引擎
+    subscriptionLinkExpiryHours: 0,   // 订阅链接过期时间（小时），0 表示不启用轮换
     enableEnhancedLogging: true,       // 启用增强日志
     maxSubscriptionConcurrency: 3,     // 最大订阅并发数
     defaultUserAgent: 'clash-meta/2.5.0', // 默认User-Agent

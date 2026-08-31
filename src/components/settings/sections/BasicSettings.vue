@@ -175,6 +175,16 @@ watch(() => props.settings.profileToken, (val) => {
             class="misub-radius-lg"
           />
         </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-300">{{ t('settings.subscriptionLinkExpiryHours') }}</label>
+          <input
+            type="number"
+            min="0"
+            v-model="settings.subscriptionLinkExpiryHours"
+            class="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          />
+          <p class="mt-1.5 text-[10px] leading-relaxed text-gray-400">{{ t('settings.subscriptionLinkExpiryHint') }}</p>
+        </div>
       </div>
     </div>
 

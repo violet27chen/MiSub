@@ -526,6 +526,15 @@ export async function handleMisubRequest(context) {
         targetMisubs = allMisubs.filter(s => s.enabled);
     }
 
+    // [订阅链接过期] 若启用 subscriptionLinkExpiryHours，链接须带 expires 参数（Unix 时间戳，秒），
+    // 过期链接直接拒绝，防止被盗用后长期有效。
+    if (config.subscriptionLinkExpiryHours > 0 && url.searchParams.has('expires')) {
+        const expiresAt = parseInt(url.searchParams.get('expires'), 10);
+        if (!Number.isFinite(expiresAt) || expiresAt < Math.floor(Date.now() / 1000)) {
+            return new Response('Subscription link expired', { status: 403 });
+        }
+    }
+
     // 使用统一的确定目标格式的方法（此方法中包含了处理各类客户端如 Surge 等对应版本的最新支持规则）
     let targetFormat = determineTargetFormat(userAgentHeader, url.searchParams);
 

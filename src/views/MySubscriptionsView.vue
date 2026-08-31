@@ -139,6 +139,6 @@ const handleQRCode = (profileId) => {
 
     <QRCodeModal v-model:show="showQRCodeModal" :url="qrCodeUrl" :title="qrCodeTitle" />
     
-    <CopyLinkModal v-if="showCopyModal && showCopyModalProfile" v-model:show="showCopyModal" :profile="showCopyModalProfile" :token="settings?.profileToken" />
+    <CopyLinkModal v-if="showCopyModal && showCopyModalProfile" v-model:show="showCopyModal" :profile="showCopyModalProfile" :token="settings?.profileToken" :config="settings" />
   </div>
 </template>

@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS = {
     enableFlagEmoji: true,
     enablePublicPage: true,
     storageType: 'kv',
+    subscriptionLinkExpiryHours: 0, // 订阅链接过期时间（小时），0 表示不启用轮换
     autoUpdateInterval: 0, // 分钟，0表示禁用自动更新
 defaultPrefixSettings: {
 enableManualNodes: true,
