@@ -78,6 +78,27 @@ export function useProfiles(markDirty) {
     }
   };
 
+  const handleDuplicateProfile = (profileId) => {
+    const profile = profiles.value.find(p => p.id === profileId || p.customId === profileId);
+    if (!profile) return;
+    const clone = JSON.parse(JSON.stringify(profile));
+    clone.id = generateProfileId();
+    clone.name = `${profile.name} (副本)`;
+    if (clone.customId) {
+      const existing = new Set(profiles.value.map(p => p.customId).filter(Boolean));
+      let candidate = `${clone.customId}-copy`;
+      let n = 1;
+      while (existing.has(candidate)) {
+        candidate = `${clone.customId}-copy-${n++}`;
+      }
+      clone.customId = candidate;
+    }
+    dataStore.addProfile(clone);
+    markDirty();
+    profilesCurrentPage.value = 1;
+    showToast(t('profiles.duplicated', { name: clone.name }), 'success');
+  };
+
   const handleSaveProfile = (profileData) => {
     if (!profileData || !profileData.name) {
       showToast(t('profiles.nameRequired'), 'error');
@@ -238,6 +259,7 @@ export function useProfiles(markDirty) {
     handleProfileToggle,
     handleAddProfile,
     handleEditProfile,
+    handleDuplicateProfile,
     handleSaveProfile,
     handleDeleteProfile,
     handleDeleteAllProfiles,

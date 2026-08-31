@@ -26,7 +26,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['add', 'edit', 'delete', 'deleteAll', 'toggle', 'openCopy', 'preview', 'reorder', 'changePage', 'viewLogs', 'qrcode', 'toggle-sort']);
+const emit = defineEmits(['add', 'edit', 'delete', 'deleteAll', 'toggle', 'openCopy', 'preview', 'reorder', 'changePage', 'viewLogs', 'qrcode', 'duplicate', 'toggle-sort']);
 
 const displayProfiles = computed(() => {
   if (props.isSorting) {
@@ -54,6 +54,7 @@ const handleDeleteAll = () => emit('deleteAll');
 const handleToggleSort = () => emit('toggle-sort');
 
 const handleQRCode = (profileId) => emit('qrcode', profileId);
+const handleDuplicate = (profileId) => emit('duplicate', profileId);
 
 // 始终基于真实 profile id 排序，避免分页视图把页内索引用到全量列表上。
 const handleMoveUp = (profileId) => {
@@ -116,6 +117,7 @@ const handleMoveDown = (profileId) => {
             @change="handleToggle($event)"
             @preview="handlePreview(profile.id)"
             @qrcode="handleQRCode(profile.id)"
+            @duplicate="handleDuplicate(profile.id)"
             @move-up="handleMoveUp(profile.id)"
             @move-down="handleMoveDown(profile.id)"
             @view-logs="emit('viewLogs', profile.id)"
