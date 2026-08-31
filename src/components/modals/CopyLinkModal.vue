@@ -52,25 +52,43 @@ const presets = [
 ];
 
 const selectedPreset = ref(null);
-const customMinutes = ref(0);
-const customUnit = ref('minutes'); // minutes | hours | days
+const customMinutes = ref(60);
+const customUnit = ref('minutes');
+const customActive = ref(false);
 
 const profileExpiryHours = computed(() => Number(props.profile?.subscriptionLinkExpiryHours || 0));
 
-const getExpiryMinutes = () => {
-  if (selectedPreset.value !== null) return selectedPreset.value;
-  if (customUnit.value === 'hours') return customMinutes.value * 60;
-  if (customUnit.value === 'days') return customMinutes.value * 1440;
-  return customMinutes.value;
+const expiryMinutes = computed(() => {
+  if (customActive.value) {
+    const factor = customUnit.value === 'hours' ? 60 : customUnit.value === 'days' ? 1440 : 1;
+    return (customMinutes.value || 0) * factor;
+  }
+  return selectedPreset.value || 0;
+});
+
+const selectPreset = (minutes) => {
+  selectedPreset.value = minutes;
+  customActive.value = false;
+};
+
+const disableExpiry = () => {
+  selectedPreset.value = null;
+  customActive.value = false;
+};
+
+const enableCustom = () => {
+  customActive.value = true;
+  if (!customMinutes.value) customMinutes.value = 60;
 };
 
 const buildLink = (format) => {
   if (!baseUrl.value) {
-    showToast('请在设置中配置一个固定的"订阅组分享Token"', 'error');
+    showToast(t('settings.copyLinkConfigureToken'), 'error');
     return '';
   }
-  const expiryMinutes = getExpiryMinutes();
-  const expiresParam = expiryMinutes > 0 ? `&expires=${Math.floor(Date.now() / 1000) + expiryMinutes * 60}` : '';
+  const expiresParam = expiryMinutes.value > 0
+    ? `&expires=${Math.floor(Date.now() / 1000) + expiryMinutes.value * 60}`
+    : '';
   return `${baseUrl.value}${format}${expiresParam}`;
 };
 
@@ -80,7 +98,7 @@ const copyToClipboard = async (format) => {
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(link);
-      showToast('链接已复制到剪贴板！', 'success');
+      showToast(t('settings.copyLinkCopied'), 'success');
       close();
     } else {
       fallbackCopy(link);
@@ -102,13 +120,13 @@ const fallbackCopy = (link) => {
   try {
     const successful = document.execCommand('copy');
     if (successful) {
-      showToast('链接已复制到剪贴板！', 'success');
+      showToast(t('settings.copyLinkCopied'), 'success');
       close();
     } else {
-      showToast('复制失败，请手动复制', 'error');
+      showToast(t('settings.copyLinkFailed'), 'error');
     }
   } catch (err) {
-    showToast('复制失败，请手动复制', 'error');
+    showToast(t('settings.copyLinkFailed'), 'error');
   }
   document.body.removeChild(textArea);
 };
@@ -117,9 +135,9 @@ const fallbackCopy = (link) => {
 <template>
   <Modal :show="show" @update:show="close" :show-cancel="false" :show-confirm="false">
     <template #title>
-      <h3 class="text-xl font-bold text-gray-900 dark:text-white">复制订阅链接</h3>
+      <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('settings.copyLinkModalTitle') }}</h3>
     </template>
-    
+
     <template #body>
       <div class="mt-2 space-y-4">
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
@@ -133,16 +151,16 @@ const fallbackCopy = (link) => {
               v-for="preset in presets"
               :key="preset.minutes"
               type="button"
-              @click="selectedPreset = preset.minutes"
-              :class="selectedPreset === preset.minutes ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
+              @click="selectPreset(preset.minutes)"
+              :class="(!customActive && selectedPreset === preset.minutes) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
               class="px-2.5 py-1.5 rounded-md border text-xs transition-colors"
             >
               {{ preset.label }}
             </button>
             <button
               type="button"
-              @click="selectedPreset = null"
-              :class="selectedPreset === null ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
+              @click="disableExpiry"
+              :class="(selectedPreset === null && !customActive) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
               class="px-2.5 py-1.5 rounded-md border text-xs transition-colors"
             >
               {{ t('settings.copyLinkDisabled') }}
@@ -153,6 +171,7 @@ const fallbackCopy = (link) => {
               type="number"
               min="0"
               v-model="customMinutes"
+              @focus="enableCustom"
               class="w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
             />
             <select
@@ -165,8 +184,9 @@ const fallbackCopy = (link) => {
             </select>
             <button
               type="button"
-              @click="selectedPreset = null"
-              class="px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-400 transition-colors"
+              @click="enableCustom"
+              :class="customActive ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
+              class="px-3 py-2 text-xs font-medium rounded-lg border transition-colors"
             >
               {{ t('settings.copyLinkUseCustom') }}
             </button>
@@ -176,8 +196,8 @@ const fallbackCopy = (link) => {
           </p>
         </div>
 
-        <div 
-          v-for="client in clients" 
+        <div
+          v-for="client in clients"
           :key="client.type"
           @click="copyToClipboard(client.format)"
           class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-300 dark:hover:border-primary-700 cursor-pointer transition-all duration-200 group"
@@ -192,7 +212,7 @@ const fallbackCopy = (link) => {
               <p class="font-medium text-gray-900 dark:text-gray-100 group-hover:text-primary-700 dark:group-hover:text-primary-300">{{ client.name }}</p>
             </div>
           </div>
-          
+
           <button class="px-3 py-1 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
             复制
           </button>
