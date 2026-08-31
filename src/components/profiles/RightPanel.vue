@@ -89,9 +89,7 @@ const subLink = computed(() => {
   
   const targetMapping = { 'Sing-Box': 'singbox', 'QuanX': 'quanx' };
   const formatKey = (targetMapping[selectedFormat.value] || selectedFormat.value.toLowerCase());
-  const expiryHours = Number(props.config?.subscriptionLinkExpiryHours || 0);
-  const expiresParam = expiryHours > 0 ? `&expires=${Math.floor(Date.now() / 1000) + expiryHours * 3600}` : '';
-  return `${baseUrl}?${formatKey}${expiresParam}`;
+  return `${baseUrl}?${formatKey}`;
 });
 
 const copyToClipboard = () => {

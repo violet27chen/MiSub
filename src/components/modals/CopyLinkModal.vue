@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import Modal from '../forms/Modal.vue';
 import { useToastStore } from '@/stores/toast';
+import { useI18n } from '@/i18n/index.js';
 
 const props = defineProps({
   show: Boolean,
@@ -11,6 +12,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:show']);
 const { showToast } = useToastStore();
+const { t } = useI18n();
 
 const close = () => {
   emit('update:show', false);
@@ -33,19 +35,48 @@ const clients = computed(() => [
   { name: 'Surge', type: 'surge', icon: 'M13 10V3L4 14h7v7l9-11h-7z', format: '?surge' },
   { name: 'Loon', type: 'loon', icon: 'M12 19l9 2-9-18-9 18 9-2zm0 0v-8', format: '?loon' },
   { name: 'V2Ray / Base64', type: 'base64', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4', format: '?base64' },
-  { name: 'Quantumult X', type: 'quanx', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', format: '?quanx' },
+  { name: 'Quantumult X', type: 'quanx', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 002 2v10a2 2 0 002 2z', format: '?quanx' },
 ]);
 
-  const copyToClipboard = async (format) => {
-    if (!baseUrl.value) {
-      showToast('请在设置中配置一个固定的"订阅组分享Token"', 'error');
-      return;
-    }
-    
-    const expiryHours = Number(props.config?.subscriptionLinkExpiryHours || 0);
-    const expiresParam = expiryHours > 0 ? `&expires=${Math.floor(Date.now() / 1000) + expiryHours * 3600}` : '';
-    const link = `${baseUrl.value}${format}${expiresParam}`;
+const presets = [
+  { label: t('copyLink.preset15m'), minutes: 15 },
+  { label: t('copyLink.preset30m'), minutes: 30 },
+  { label: t('copyLink.preset1h'), minutes: 60 },
+  { label: t('copyLink.preset3h'), minutes: 180 },
+  { label: t('copyLink.preset6h'), minutes: 360 },
+  { label: t('copyLink.preset12h'), minutes: 720 },
+  { label: t('copyLink.preset1d'), minutes: 1440 },
+  { label: t('copyLink.preset3d'), minutes: 4320 },
+  { label: t('copyLink.preset7d'), minutes: 10080 },
+  { label: t('copyLink.preset30d'), minutes: 43200 },
+];
 
+const selectedPreset = ref(null);
+const customMinutes = ref(0);
+const customUnit = ref('minutes'); // minutes | hours | days
+
+const profileExpiryHours = computed(() => Number(props.profile?.subscriptionLinkExpiryHours || 0));
+
+const getExpiryMinutes = () => {
+  if (selectedPreset.value !== null) return selectedPreset.value;
+  if (customUnit.value === 'hours') return customMinutes.value * 60;
+  if (customUnit.value === 'days') return customMinutes.value * 1440;
+  return customMinutes.value;
+};
+
+const buildLink = (format) => {
+  if (!baseUrl.value) {
+    showToast('请在设置中配置一个固定的"订阅组分享Token"', 'error');
+    return '';
+  }
+  const expiryMinutes = getExpiryMinutes();
+  const expiresParam = expiryMinutes > 0 ? `&expires=${Math.floor(Date.now() / 1000) + expiryMinutes * 60}` : '';
+  return `${baseUrl.value}${format}${expiresParam}`;
+};
+
+const copyToClipboard = async (format) => {
+  const link = buildLink(format);
+  if (!link) return;
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(link);
@@ -68,7 +99,6 @@ const fallbackCopy = (link) => {
   document.body.appendChild(textArea);
   textArea.focus();
   textArea.select();
-  
   try {
     const successful = document.execCommand('copy');
     if (successful) {
@@ -91,15 +121,60 @@ const fallbackCopy = (link) => {
     </template>
     
     <template #body>
-      <div class="mt-2" v-if="!baseUrl">
-         <p class="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
-           检测到您未在设置中配置“订阅组分享Token”，无法生成链接。请前往设置页面配置。
-         </p>
-      </div>
-      <div v-else class="space-y-3 mt-4">
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          如果您使用的客户端有特殊格式要求，请点选对应的专用链接进行复制。
+      <div class="mt-2 space-y-4">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          {{ t('copyLinkModalDesc') }}
         </p>
+
+        <div class="rounded-lg border border-gray-200/70 dark:border-white/10 bg-gray-50/60 dark:bg-white/5 p-3">
+          <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{{ t('copyLinkExpiryLabel') }}</p>
+          <div class="flex flex-wrap gap-2 mb-2">
+            <button
+              v-for="preset in presets"
+              :key="preset.minutes"
+              type="button"
+              @click="selectedPreset = preset.minutes"
+              :class="selectedPreset === preset.minutes ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
+              class="px-2.5 py-1.5 rounded-md border text-xs transition-colors"
+            >
+              {{ preset.label }}
+            </button>
+            <button
+              type="button"
+              @click="selectedPreset = null"
+              :class="selectedPreset === null ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-indigo-400'"
+              class="px-2.5 py-1.5 rounded-md border text-xs transition-colors"
+            >
+              {{ t('copyLinkDisabled') }}
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              v-model="customMinutes"
+              class="w-24 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            />
+            <select
+              v-model="customUnit"
+              class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            >
+              <option value="minutes">{{ t('settings.minutes') }}</option>
+              <option value="hours">{{ t('settings.hours') }}</option>
+              <option value="days">{{ t('settings.days') }}</option>
+            </select>
+            <button
+              type="button"
+              @click="selectedPreset = null"
+              class="px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-400 transition-colors"
+            >
+              {{ t('copyLinkUseCustom') }}
+            </button>
+          </div>
+          <p v-if="profileExpiryHours > 0" class="mt-1.5 text-[10px] text-gray-400">
+            {{ t('copyLinkProfileDefault', { hours: profileExpiryHours }) }}
+          </p>
+        </div>
 
         <div 
           v-for="client in clients" 
