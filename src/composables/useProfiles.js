@@ -95,6 +95,7 @@ export function useProfiles(markDirty) {
     }
     dataStore.addProfile(clone);
     markDirty();
+    void dataStore.saveData();
     profilesCurrentPage.value = 1;
     showToast(t('profiles.duplicated', { name: clone.name }), 'success');
   };
