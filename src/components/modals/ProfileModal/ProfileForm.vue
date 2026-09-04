@@ -332,6 +332,18 @@ const isActivePreset = (value) => {
             </select>
           </div>
 
+          <!-- 默认出口节点 -->
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{{ t('profileModal.defaultExitNode') }}</label>
+            <input
+              type="text"
+              v-model="localProfile.defaultExitNode"
+              :placeholder="t('profileModal.defaultExitNodePlaceholder')"
+              class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 misub-radius-md sm:text-sm dark:text-white"
+            />
+            <p class="mt-1 text-[10px] text-gray-400">{{ t('profileModal.defaultExitNodeHint') }}</p>
+          </div>
+
           <div class="mt-3">
             <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{{ t('settings.subscriptionLinkExpiryValue') }}</label>
             <div class="flex flex-wrap gap-2 mb-2">

@@ -170,13 +170,14 @@ export const DEFAULT_PROFILE_FORM = {
     subscriptions: [],
     manualNodes: [],
     enabled: true,
-prefixSettings: {
-enableManualNodes: true,
-enableSubscriptions: true,
-manualNodePrefix: '\u624b\u52a8\u8282\u70b9',
-subscriptionPrefix: '',
-prependGroupName: null
-},
+    defaultExitNode: '',
+    prefixSettings: {
+        enableManualNodes: true,
+        enableSubscriptions: true,
+        manualNodePrefix: '\u624b\u52a8\u8282\u70b9',
+        subscriptionPrefix: '',
+        prependGroupName: null
+    },
     subconverter: {
         engineMode: '',
         backend: '',
@@ -189,6 +190,6 @@ prependGroupName: null
             list: null
         }
     },
-nodeTransform: null,
-nodeTransformPresetId: ''
+    nodeTransform: null,
+    nodeTransformPresetId: ''
 };

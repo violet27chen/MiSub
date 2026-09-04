@@ -124,6 +124,26 @@ function applyMihomoRelayDialerProxy(proxies, publicProxies, proxyGroups) {
 }
 
 /**
+ * 为 HTTP/HTTPS 节点应用 profile 级别的默认出口节点（dialer-proxy）。
+ * 仅当节点本身未携带 dialer-proxy 时才继承，避免覆盖 URL 中已有的链式设置。
+ * @param {Object[]} proxies - 代理对象数组
+ * @param {string} defaultExitNode - 默认出口节点名称
+ */
+function applyDefaultExitNode(proxies, defaultExitNode) {
+    if (!defaultExitNode || typeof defaultExitNode !== 'string' || !defaultExitNode.trim()) {
+        return;
+    }
+    const exitName = defaultExitNode.trim();
+    proxies.forEach(proxy => {
+        if (!proxy || typeof proxy !== 'object') return;
+        const type = (proxy.type || '').toLowerCase();
+        if (type !== 'http' && type !== 'https') return;
+        if (proxy['dialer-proxy']) return; // 已有 dialer-proxy 时不覆盖
+        proxy['dialer-proxy'] = exitName;
+    });
+}
+
+/**
  * 生成内置 Clash 配置
  * @param {string} nodeList - 节点列表（换行分隔的 URL）
  * @param {Object} options - 配置选项
@@ -164,6 +184,9 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
     if (proxies.length === 0) {
         return '# No valid proxies found\nproxies: []\n';
     }
+
+    // [新增] 应用默认出口节点（dialer-proxy）继承
+    applyDefaultExitNode(proxies, options.defaultExitNode);
 
     // 生成 YAML
     try {
@@ -273,20 +296,23 @@ export function generateBuiltinClashConfig(nodeList, options = {}) {
  * @param {string} nodeList - 节点列表
  * @returns {string} 仅包含 proxies 部分的 YAML
  */
-export function generateProxiesOnly(nodeList) {
+export function generateProxiesOnly(nodeList, options = {}) {
     const cleanedNodeList = cleanControlChars(nodeList);
     const nodeUrls = cleanedNodeList
         .split('\n')
         .map(line => line.trim())
         .filter(line => line && !line.startsWith('#'));
 
-    let proxies = urlsToClashProxies(nodeUrls);
+    let proxies = urlsToClashProxies(nodeUrls, options);
 
     // 清理控制字符
     proxies = deepCleanControlChars(proxies);
 
     // 处理重名节点
     deduplicateNames(proxies);
+
+    // [新增] 应用默认出口节点（dialer-proxy）继承
+    applyDefaultExitNode(proxies, options.defaultExitNode);
 
     try {
         const publicProxies = stripInternalProxyFields(proxies);

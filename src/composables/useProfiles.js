@@ -54,6 +54,7 @@ export function useProfiles(markDirty) {
       transformConfig: '', 
       ruleLevel: '', 
       expiresAt: '',
+      defaultExitNode: '',
       operators: [] // [New] Initialize operator chain
     };
     showProfileModal.value = true;

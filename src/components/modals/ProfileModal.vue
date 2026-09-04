@@ -233,6 +233,7 @@ watch(() => props.profile, (newProfile) => {
       expiresAt: '',
       isPublic: true,
       description: '',
+      defaultExitNode: '',
       prefixSettings: {
         enableManualNodes: null,
         enableSubscriptions: null,

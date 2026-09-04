@@ -798,6 +798,7 @@ export async function handleMisubRequest(context) {
                         .filter(sub => !(typeof sub?.url === 'string' && sub.url.toLowerCase().startsWith('http')))
                         .map(sub => (typeof sub?.name === 'string' ? sub.name.trim() : ''))
                         .filter(Boolean),
+                    defaultExitNode: currentProfile?.defaultExitNode || '',
                     targetMisubs: targetMisubs.map(sub => {
                         const isHttp = typeof sub?.url === 'string' && sub.url.toLowerCase().startsWith('http');
                         const groupName = (typeof sub?.name === 'string' && sub.name.trim()) ? sub.name.trim()
@@ -949,6 +950,7 @@ export async function handleMisubRequest(context) {
             .filter(sub => !(typeof sub?.url === 'string' && sub.url.toLowerCase().startsWith('http')))
             .map(sub => (typeof sub?.name === 'string' ? sub.name.trim() : ''))
             .filter(Boolean),
+        defaultExitNode: currentProfile?.defaultExitNode || '',
         targetMisubs: targetMisubs.map(sub => {
             const isHttp = typeof sub?.url === 'string' && sub.url.toLowerCase().startsWith('http');
             const groupName = (typeof sub?.name === 'string' && sub.name.trim()) ? sub.name.trim()
