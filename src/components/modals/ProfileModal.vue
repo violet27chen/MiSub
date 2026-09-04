@@ -172,13 +172,7 @@ const filteredManualNodes = computed(() => {
 
 const selectedNodeNames = computed(() => {
   const names = new Set();
-  const subIds = localProfile.value?.subscriptions || [];
   const nodeIds = localProfile.value?.manualNodes || [];
-
-  subIds.forEach(id => {
-    const sub = props.allSubscriptions.find(s => s.id === id);
-    if (sub?.name) names.add(sub.name);
-  });
 
   nodeIds.forEach(id => {
     const node = props.allManualNodes.find(n => n.id === id);
