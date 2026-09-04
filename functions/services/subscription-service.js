@@ -35,7 +35,9 @@ const REAL_PROXY_PROTOCOLS = [
     'tuic://',
     'anytls://',
     'socks5://',
-    'socks://'
+    'socks://',
+    'http://',
+    'https://'
 ];
 
 /**
