@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import TransformSelector from '../../forms/TransformSelector.vue';
 import Input from '../../ui/Input.vue';
 import Switch from '../../ui/Switch.vue';
@@ -33,6 +33,10 @@ const props = defineProps({
   globalSettings: {
     type: Object,
     default: () => ({})
+  },
+  availableNodeNames: {
+    type: Array,
+    default: () => []
   }
 });
 
@@ -72,6 +76,34 @@ const flagOptions = [
 
 const selectedTransformAsset = ref(null);
 const emit = defineEmits(['toggle-advanced']);
+
+const relayInputRef = ref(null);
+const showRelayDropdown = ref(false);
+
+const filteredRelayOptions = computed(() => {
+  const query = String(props.localProfile.defaultExitNode || '').trim().toLowerCase();
+  const source = Array.isArray(props.availableNodeNames) ? props.availableNodeNames : [];
+  if (!query) return source;
+  return source.filter(name => String(name).toLowerCase().includes(query));
+});
+
+const selectRelayNode = (name) => {
+  props.localProfile.defaultExitNode = name;
+  showRelayDropdown.value = false;
+};
+
+const handleRelayClickOutside = (e) => {
+  if (relayInputRef.value && !relayInputRef.value.contains(e.target)) {
+    showRelayDropdown.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleRelayClickOutside);
+});
+onUnmounted(() => {
+  document.removeEventListener('click', handleRelayClickOutside);
+});
 
 const isExternalEngine = computed(() => {
   const localMode = props.localProfile?.subconverter?.engineMode || '';
@@ -333,14 +365,30 @@ const isActivePreset = (value) => {
           </div>
 
           <!-- 默认中转节点 -->
-          <div class="sm:col-span-2">
+          <div class="sm:col-span-2 relative">
             <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{{ t('profileModal.defaultRelayNode') }}</label>
             <input
+              ref="relayInputRef"
               type="text"
               v-model="localProfile.defaultExitNode"
+              @input="showRelayDropdown = true"
+              @focus="showRelayDropdown = true"
               :placeholder="t('profileModal.defaultRelayNodePlaceholder')"
               class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 misub-radius-md sm:text-sm dark:text-white"
             />
+            <ul
+              v-if="showRelayDropdown && filteredRelayOptions.length"
+              class="absolute z-50 mt-1 max-h-48 w-full overflow-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 misub-radius-md shadow-lg"
+            >
+              <li
+                v-for="name in filteredRelayOptions"
+                :key="name"
+                @click="selectRelayNode(name)"
+                class="px-3 py-2 text-sm cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-gray-700 dark:text-gray-200"
+              >
+                {{ name }}
+              </li>
+            </ul>
             <p class="mt-1 text-[10px] text-gray-400">{{ t('profileModal.defaultRelayNodeHint') }}</p>
           </div>
 

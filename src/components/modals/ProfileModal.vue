@@ -170,6 +170,24 @@ const filteredManualNodes = computed(() => {
   });
 });
 
+const selectedNodeNames = computed(() => {
+  const names = new Set();
+  const subIds = localProfile.value?.subscriptions || [];
+  const nodeIds = localProfile.value?.manualNodes || [];
+
+  subIds.forEach(id => {
+    const sub = props.allSubscriptions.find(s => s.id === id);
+    if (sub?.name) names.add(sub.name);
+  });
+
+  nodeIds.forEach(id => {
+    const node = props.allManualNodes.find(n => n.id === id);
+    if (node?.name) names.add(node.name);
+  });
+
+  return Array.from(names).sort();
+});
+
 watch(() => props.profile, (newProfile) => {
   if (newProfile) {
     const profileCopy = JSON.parse(JSON.stringify(newProfile));
@@ -320,6 +338,7 @@ const updateSelectedIds = (listName, newIds) => {
           :prefix-toggle-options="prefixToggleOptions" 
           :group-prefix-toggle-options="groupPrefixToggleOptions"
           :global-settings="dataStore.settings"
+          :available-node-names="selectedNodeNames"
           @toggle-advanced="showAdvanced = !showAdvanced" 
         />
 
