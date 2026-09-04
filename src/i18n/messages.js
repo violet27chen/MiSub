@@ -179,9 +179,9 @@ export const messages = {
       noAvailableSubscriptions: '没有可用的机场订阅',
       noMatchedNodes: '没有找到匹配的节点。',
       noAvailableNodes: '没有可用的手动节点',
-      defaultExitNode: '默认出口节点',
-      defaultExitNodePlaceholder: '留空则不继承；填写节点名称，如：🌍 freesocks',
-      defaultExitNodeHint: '导出 Clash 配置时，HTTP/HTTPS 节点将自动继承该出口节点作为 dialer-proxy'
+      defaultRelayNode: '默认中转节点',
+      defaultRelayNodePlaceholder: '留空则不继承；填写节点名称，如：🌍 freesocks',
+      defaultRelayNodeHint: '导出 Clash 配置时，HTTP/HTTPS 节点将自动通过该中转节点拨号（dialer-proxy）'
     },
     manualNodes: {
       title: '手动节点',
@@ -1467,9 +1467,9 @@ export const messages = {
       noAvailableSubscriptions: 'No sources available',
       noMatchedNodes: 'No matching nodes.',
       noAvailableNodes: 'No nodes available',
-      defaultExitNode: 'Default exit node',
-      defaultExitNodePlaceholder: 'Leave empty to skip; enter node name, e.g. 🌍 freesocks',
-      defaultExitNodeHint: 'When exporting Clash config, HTTP/HTTPS nodes will inherit this exit node as dialer-proxy'
+      defaultRelayNode: 'Default relay node',
+      defaultRelayNodePlaceholder: 'Leave empty to skip; enter node name, e.g. 🌍 freesocks',
+      defaultRelayNodeHint: 'When exporting Clash config, HTTP/HTTPS nodes will dial through this relay node (dialer-proxy)'
     },
     manualNodes: {
       title: 'Nodes',
