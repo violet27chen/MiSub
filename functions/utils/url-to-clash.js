@@ -1141,6 +1141,60 @@ function parseHttpsUrl(url) {
 }
 
 /**
+ * 将 HTTP URL 转换为 Clash 代理对象
+ * @param {string} url - HTTP URL
+ * @returns {Object|null} Clash 代理对象
+ */
+function parseHttpUrl(url) {
+    try {
+        const body = url.substring(7); // 去掉 http://
+        const atIndex = body.indexOf('@');
+        if (atIndex === -1) return null;
+
+        let userInfo = body.substring(0, atIndex);
+        let serverPart = body.substring(atIndex + 1);
+
+        const queryIndex = serverPart.indexOf('?');
+        const hashIndex = serverPart.indexOf('#');
+
+        if (queryIndex !== -1) {
+            serverPart = serverPart.substring(0, queryIndex);
+        } else if (hashIndex !== -1) {
+            serverPart = serverPart.substring(0, hashIndex);
+        }
+
+        const { server, port } = parseHostPort(serverPart);
+        const params = parseQueryParams(url);
+        const name = extractName(url);
+
+        let username = '';
+        let password = '';
+        const colonIndex = userInfo.indexOf(':');
+        if (colonIndex !== -1) {
+            username = decodeURIComponent(userInfo.substring(0, colonIndex));
+            password = decodeURIComponent(userInfo.substring(colonIndex + 1));
+        } else {
+            username = decodeURIComponent(userInfo);
+        }
+
+        const proxy = {
+            name: name || `HTTP-${server}`,
+            type: 'http',
+            server,
+            port,
+            username,
+            password
+        };
+
+        proxy.udp = false;
+        return proxy;
+    } catch (e) {
+        console.error('解析 HTTP URL 失败:', e);
+        return null;
+    }
+}
+
+/**
  * 将 SOCKS5 URL 转换为 Clash 代理对象
  * @param {string} url - SOCKS5 URL
  * @returns {Object|null} Clash 代理对象
@@ -1330,10 +1384,13 @@ export function urlToClashProxy(url) {
         return parseWireguardUrl(url);
     } else if (lowerUrl.startsWith('anytls://')) {
         return parseAnytlsUrl(url);
+    } else if (lowerUrl.startsWith('http://')) {
+        return parseHttpUrl(url);
     } else if (lowerUrl.startsWith('https://')) {
         return parseHttpsUrl(url);
-    } else if (lowerUrl.startsWith('socks5://')) {
-        return parseSocks5Url(url);
+    } else if (lowerUrl.startsWith('socks5://') || lowerUrl.startsWith('socks://')) {
+        const normalizedUrl = url.replace(/^socks:\/\//i, 'socks5://');
+        return parseSocks5Url(normalizedUrl);
     }
 
     // 不支持的协议
