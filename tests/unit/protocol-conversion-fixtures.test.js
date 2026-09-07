@@ -661,4 +661,60 @@ proxies:
             expect(urlsToClashProxies([url])).toEqual([]);
         }
     });
+
+    it('parses v2rayn:// share links from v2rayNG 2.3.7+', () => {
+        const config = {
+            ps: 'V2RayN Test',
+            add: 'v2rayn.example.com',
+            port: '443',
+            id: '11111111-2222-3333-4444-555555555555',
+            aid: '0',
+            scy: 'auto',
+            net: 'ws',
+            type: 'none',
+            host: 'v2rayn.example.com',
+            path: '/ws',
+            tls: 'tls',
+            sni: 'v2rayn.example.com',
+            alpn: 'h2,http/1.1',
+            fp: 'chrome'
+        };
+        const b64 = Buffer.from(JSON.stringify(config), 'utf8').toString('base64');
+        const url = `v2rayn://${b64}`;
+
+        const parsed = urlToClashProxy(url);
+        expect(parsed).toBeTruthy();
+        expect(parsed).toMatchObject({
+            name: 'V2RayN Test',
+            type: 'vmess',
+            server: 'v2rayn.example.com',
+            port: 443,
+            uuid: '11111111-2222-3333-4444-555555555555',
+            alterId: 0,
+            cipher: 'auto',
+            network: 'ws',
+            tls: true,
+            servername: 'v2rayn.example.com',
+            sni: 'v2rayn.example.com',
+            'client-fingerprint': 'chrome',
+            alpn: ['h2', 'http/1.1']
+        });
+        expect(parsed['ws-opts']).toEqual({
+            path: '/ws',
+            headers: { Host: 'v2rayn.example.com' }
+        });
+
+        const [batched] = urlsToClashProxies([url], { addFlagEmoji: false });
+        expect(batched).toMatchObject({
+            name: 'V2RayN Test',
+            type: 'vmess',
+            server: 'v2rayn.example.com',
+            port: 443
+        });
+    });
+
+    it('returns null for invalid v2rayn:// payloads', () => {
+        expect(urlToClashProxy('v2rayn://not-json')).toBeNull();
+        expect(urlToClashProxy('v2rayn://')).toBeNull();
+    });
 });

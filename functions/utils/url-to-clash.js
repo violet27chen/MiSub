@@ -440,6 +440,79 @@ function parseVmessUrl(url) {
 }
 
 /**
+ * 将 v2rayNG 2.3.7+ 的 v2rayn:// 分享链接转换为 Clash 代理对象
+ * v2rayn:// 内部是 base64(JSON)，字段与 VMess JSON 基本一致
+ * @param {string} url - v2rayn:// URL
+ * @returns {Object|null} Clash 代理对象
+ */
+function parseV2raynUrl(url) {
+    try {
+        const base64Part = url.substring(9);
+
+        let normalized = base64Part.replace(/-/g, '+').replace(/_/g, '/');
+        while (normalized.length % 4) normalized += '=';
+
+        const binaryString = atob(normalized);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const jsonStr = new TextDecoder('utf-8').decode(bytes);
+        const config = JSON.parse(jsonStr);
+
+        const proxy = {
+            name: config.ps || `V2RayN-${config.add}`,
+            type: 'vmess',
+            server: config.add || config.host || config.sni || '',
+            port: parseInt(config.port),
+            uuid: config.id,
+            alterId: parseInt(config.aid) || 0,
+            cipher: config.scy || 'auto'
+        };
+
+        const network = config.net || 'tcp';
+        if (network !== 'tcp') {
+            proxy.network = network;
+        }
+
+        if (network === 'ws') {
+            const wsOpts = {};
+            if (config.path) wsOpts.path = config.path;
+            if (config.host) {
+                wsOpts.headers = { Host: config.host };
+            }
+            if (Object.keys(wsOpts).length > 0) {
+                proxy['ws-opts'] = wsOpts;
+            }
+        }
+
+        if (network === 'grpc') {
+            const grpcOpts = {};
+            if (config.path) grpcOpts['grpc-service-name'] = config.path;
+            if (config.host) grpcOpts['grpc-service-name'] = config.host;
+            if (Object.keys(grpcOpts).length > 0) {
+                proxy['grpc-opts'] = grpcOpts;
+            }
+        }
+
+        if (config.tls === 'tls' || config.tls === 'reality') {
+            proxy.tls = true;
+            if (config.sni) {
+                proxy.servername = config.sni;
+                proxy.sni = config.sni;
+            }
+            if (config.fp) proxy['client-fingerprint'] = config.fp;
+            if (config.alpn) proxy.alpn = String(config.alpn).split(',').map(s => s.trim());
+        }
+
+        return proxy;
+    } catch (e) {
+        console.error('解析 v2rayn:// URL 失败:', e);
+        return null;
+    }
+}
+
+/**
  * 解析 Shadowsocks 插件参数 (SIP002)
  * 格式: plugin-name;opt1=val1;opt2=val2
  */
@@ -1362,7 +1435,9 @@ export function urlToClashProxy(url) {
 
     const lowerUrl = url.toLowerCase();
 
-    if (lowerUrl.startsWith('vless://')) {
+    if (lowerUrl.startsWith('v2rayn://')) {
+        return parseV2raynUrl(url);
+    } else if (lowerUrl.startsWith('vless://')) {
         return parseVlessUrl(url);
     } else if (lowerUrl.startsWith('trojan://')) {
         return parseTrojanUrl(url);
