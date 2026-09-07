@@ -663,58 +663,143 @@ proxies:
     });
 
     it('parses v2rayn:// share links from v2rayNG 2.3.7+', () => {
-        const config = {
-            ps: 'V2RayN Test',
-            add: 'v2rayn.example.com',
-            port: '443',
-            id: '11111111-2222-3333-4444-555555555555',
-            aid: '0',
-            scy: 'auto',
-            net: 'ws',
-            type: 'none',
-            host: 'v2rayn.example.com',
-            path: '/ws',
-            tls: 'tls',
-            sni: 'v2rayn.example.com',
-            alpn: 'h2,http/1.1',
-            fp: 'chrome'
+        // HTTP 节点
+        const httpConfig = {
+            IndexId: 'AIy0Iw',
+            ConfigType: 10,
+            ConfigVersion: 4,
+            Remarks: 'HTTP Test',
+            Address: 'http.example.com',
+            Port: 8080,
+            Password: 'http-pass',
+            Username: 'http-user'
         };
-        const b64 = Buffer.from(JSON.stringify(config), 'utf8').toString('base64');
-        const url = `v2rayn://${b64}`;
+        const httpB64 = Buffer.from(JSON.stringify(httpConfig), 'utf8').toString('base64');
+        const httpUrl = `v2rayn://http/${httpB64}`;
 
-        const parsed = urlToClashProxy(url);
-        expect(parsed).toBeTruthy();
-        expect(parsed).toMatchObject({
-            name: 'V2RayN Test',
-            type: 'vmess',
-            server: 'v2rayn.example.com',
+        const httpParsed = urlToClashProxy(httpUrl);
+        expect(httpParsed).toMatchObject({
+            name: 'HTTP Test',
+            type: 'http',
+            server: 'http.example.com',
+            port: 8080,
+            username: 'http-user',
+            password: 'http-pass'
+        });
+
+        // VLESS 节点
+        const vlessConfig = {
+            IndexId: 'abc123',
+            ConfigType: 1,
+            ConfigVersion: 4,
+            Remarks: 'VLESS Test',
+            Address: 'vless.example.com',
+            Port: 443,
+            Password: '11111111-2222-3333-4444-555555555555',
+            Network: 'ws',
+            Path: '/ws',
+            Host: 'vless.example.com',
+            StreamSecurity: 'tls',
+            Sni: 'vless.example.com',
+            Alpn: 'h2,http/1.1',
+            Fingerprint: 'chrome'
+        };
+        const vlessB64 = Buffer.from(JSON.stringify(vlessConfig), 'utf8').toString('base64');
+        const vlessUrl = `v2rayn://vless/${vlessB64}`;
+
+        const vlessParsed = urlToClashProxy(vlessUrl);
+        expect(vlessParsed).toMatchObject({
+            name: 'VLESS Test',
+            type: 'vless',
+            server: 'vless.example.com',
             port: 443,
             uuid: '11111111-2222-3333-4444-555555555555',
             alterId: 0,
-            cipher: 'auto',
             network: 'ws',
             tls: true,
-            servername: 'v2rayn.example.com',
-            sni: 'v2rayn.example.com',
+            sni: 'vless.example.com',
+            servername: 'vless.example.com',
             'client-fingerprint': 'chrome',
             alpn: ['h2', 'http/1.1']
         });
-        expect(parsed['ws-opts']).toEqual({
+        expect(vlessParsed['ws-opts']).toEqual({
             path: '/ws',
-            headers: { Host: 'v2rayn.example.com' }
+            headers: { Host: 'vless.example.com' }
         });
 
-        const [batched] = urlsToClashProxies([url], { addFlagEmoji: false });
-        expect(batched).toMatchObject({
-            name: 'V2RayN Test',
+        // VMess 节点
+        const vmessConfig = {
+            IndexId: 'def456',
+            ConfigType: 2,
+            ConfigVersion: 4,
+            Remarks: 'VMess Test',
+            Address: 'vmess.example.com',
+            Port: 443,
+            Password: '22222222-3333-4444-5555-666666666666',
+            AlterId: 0,
+            Network: 'tcp',
+            StreamSecurity: 'tls',
+            Sni: 'vmess.example.com',
+            Fingerprint: 'chrome'
+        };
+        const vmessB64 = Buffer.from(JSON.stringify(vmessConfig), 'utf8').toString('base64');
+        const vmessUrl = `v2rayn://vmess/${vmessB64}`;
+
+        const vmessParsed = urlToClashProxy(vmessUrl);
+        expect(vmessParsed).toMatchObject({
+            name: 'VMess Test',
             type: 'vmess',
-            server: 'v2rayn.example.com',
-            port: 443
+            server: 'vmess.example.com',
+            port: 443,
+            uuid: '22222222-3333-4444-5555-666666666666',
+            tls: true,
+            sni: 'vmess.example.com'
         });
+
+        // Trojan 节点
+        const trojanConfig = {
+            IndexId: 'ghi789',
+            ConfigType: 4,
+            ConfigVersion: 4,
+            Remarks: 'Trojan Test',
+            Address: 'trojan.example.com',
+            Port: 443,
+            Password: 'trojan-pass',
+            StreamSecurity: 'tls',
+            Sni: 'trojan.example.com'
+        };
+        const trojanB64 = Buffer.from(JSON.stringify(trojanConfig), 'utf8').toString('base64');
+        const trojanUrl = `v2rayn://trojan/${trojanB64}`;
+
+        const trojanParsed = urlToClashProxy(trojanUrl);
+        expect(trojanParsed).toMatchObject({
+            name: 'Trojan Test',
+            type: 'trojan',
+            server: 'trojan.example.com',
+            port: 443,
+            password: 'trojan-pass',
+            tls: true,
+            sni: 'trojan.example.com'
+        });
+
+        // 批量解析
+        const allParsed = urlsToClashProxies([httpUrl, vlessUrl, vmessUrl, trojanUrl], { addFlagEmoji: false });
+        expect(allParsed).toHaveLength(4);
+        expect(allParsed.map(p => p.type)).toEqual(['http', 'vless', 'vmess', 'trojan']);
     });
 
     it('returns null for invalid v2rayn:// payloads', () => {
-        expect(urlToClashProxy('v2rayn://not-json')).toBeNull();
+        expect(urlToClashProxy('v2rayn://http/not-json')).toBeNull();
         expect(urlToClashProxy('v2rayn://')).toBeNull();
+        // policy group 不能作为代理
+        const groupConfig = {
+            IndexId: 'grp1',
+            ConfigType: 101,
+            ConfigVersion: 4,
+            Remarks: 'test_group',
+            ProtoExtraObj: { ChildItems: 'node1' }
+        };
+        const groupB64 = Buffer.from(JSON.stringify(groupConfig), 'utf8').toString('base64');
+        expect(urlToClashProxy(`v2rayn://policygroup/${groupB64}`)).toBeNull();
     });
 });

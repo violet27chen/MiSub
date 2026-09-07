@@ -440,16 +440,28 @@ function parseVmessUrl(url) {
 }
 
 /**
- * 将 v2rayNG 2.3.7+ 的 v2rayn:// 分享链接转换为 Clash 代理对象
- * v2rayn:// 内部是 base64(JSON)，字段与 VMess JSON 基本一致
+ * 将 v2rayN / v2rayNG 2.3.7+ 的 v2rayn:// 分享链接转换为 Clash 代理对象
+ * 格式: v2rayn://{ConfigType}/{url-safe-base64(json)}
+ * JSON 字段与 VMess 不一致，使用 v2rayN 专有字段名
  * @param {string} url - v2rayn:// URL
  * @returns {Object|null} Clash 代理对象
  */
 function parseV2raynUrl(url) {
     try {
-        const base64Part = url.substring(9);
+        const prefix = 'v2rayn://';
+        const body = url.substring(prefix.length);
 
-        let normalized = base64Part.replace(/-/g, '+').replace(/_/g, '/');
+        // 分离 ConfigType 和 base64 payload
+        let payload;
+        const slashIdx = body.indexOf('/');
+        if (slashIdx !== -1) {
+            payload = body.substring(slashIdx + 1);
+        } else {
+            payload = body;
+        }
+
+        // 解码 base64 (URL-safe)
+        let normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
         while (normalized.length % 4) normalized += '=';
 
         const binaryString = atob(normalized);
@@ -460,49 +472,239 @@ function parseV2raynUrl(url) {
         const jsonStr = new TextDecoder('utf-8').decode(bytes);
         const config = JSON.parse(jsonStr);
 
-        const proxy = {
-            name: config.ps || `V2RayN-${config.add}`,
-            type: 'vmess',
-            server: config.add || config.host || config.sni || '',
-            port: parseInt(config.port),
-            uuid: config.id,
-            alterId: parseInt(config.aid) || 0,
-            cipher: config.scy || 'auto'
+        if (!config.Remarks || !config.Address) return null;
+
+        const server = config.Address;
+        const port = parseInt(config.Port || config.port) || 0;
+        if (!port) return null;
+
+        // 从 URL 路径或 ConfigType 字段确定协议
+        const urlType = slashIdx !== -1 ? body.substring(0, slashIdx).toLowerCase() : '';
+        const numericType = config.ConfigType;
+        let detectedType = urlType;
+        if (!detectedType) {
+            // 根据 ConfigType 数字推断协议
+            const typeMap = {
+                1: 'vless', 2: 'vmess', 3: 'ss', 4: 'trojan',
+                6: 'hysteria2', 7: 'hysteria', 8: 'tuic',
+                10: 'http', 11: 'anytls', 12: 'naive',
+                101: 'policygroup'
+            };
+            detectedType = typeMap[numericType] || '';
+        }
+
+        // 转换 TLS / SNI / ALPN / 指纹公共字段
+        const applyTlsFields = (proxy) => {
+            if (config.StreamSecurity === 'tls' || config.StreamSecurity === 'reality') {
+                proxy.tls = true;
+                if (config.Sni) proxy.sni = config.Sni;
+                if (config.ServerName) proxy.servername = config.ServerName;
+                else if (config.Sni) proxy.servername = config.Sni;
+                if (config.Fingerprint) {
+                    proxy['client-fingerprint'] = config.Fingerprint;
+                } else if (config.Cert) {
+                    proxy['client-fingerprint'] = 'original';
+                }
+                if (config.Alpn) {
+                    proxy.alpn = String(config.Alpn).split(',').map(s => s.trim()).filter(Boolean);
+                }
+            }
+            if (config.AllowInsecure === 'true' || config.AllowInsecure === true) {
+                proxy['skip-cert-verify'] = true;
+            }
         };
 
-        const network = config.net || 'tcp';
-        if (network !== 'tcp') {
-            proxy.network = network;
+        // 转换传输层设置
+        const applyTransport = (proxy) => {
+            const network = config.Network || 'tcp';
+            if (network !== 'tcp') {
+                proxy.network = network;
+
+                if (network === 'ws') {
+                    const wsOpts = {};
+                    if (config.Path) wsOpts.path = config.Path;
+                    if (config.Host) wsOpts.headers = { Host: config.Host };
+                    if (Object.keys(wsOpts).length > 0) {
+                        proxy['ws-opts'] = wsOpts;
+                    }
+                }
+
+                if (network === 'grpc') {
+                    const grpcOpts = {};
+                    if (config.Path) grpcOpts['grpc-service-name'] = config.Path;
+                    if (config.Host) grpcOpts['grpc-service-name'] = config.Host;
+                    if (Object.keys(grpcOpts).length > 0) {
+                        proxy['grpc-opts'] = grpcOpts;
+                    }
+                }
+
+                if (network === 'h2') {
+                    const h2Opts = {};
+                    if (config.Path) h2Opts.path = config.Path;
+                    if (config.Host) h2Opts.host = config.Host.split(',').map(h => h.trim());
+                    if (Object.keys(h2Opts).length > 0) {
+                        proxy['h2-opts'] = h2Opts;
+                    }
+                }
+
+                if (network === 'http') {
+                    const httpOpts = {
+                        path: config.Path || '/',
+                        headers: {}
+                    };
+                    if (config.Host) {
+                        httpOpts.headers.Host = config.Host.split(',').map(h => h.trim());
+                    }
+                    proxy['http-opts'] = httpOpts;
+                }
+            }
+        };
+
+        let proxy = null;
+
+        switch (detectedType) {
+            case 'http': {
+                proxy = {
+                    name: config.Remarks,
+                    type: 'http',
+                    server,
+                    port,
+                    username: config.Username || '',
+                    password: config.Password || ''
+                };
+                if (config.HeaderType && config.HeaderType !== 'none') {
+                    proxy['http-opts'] = { headers: { Host: config.Host || '' } };
+                }
+                break;
+            }
+
+            case 'ss': {
+                const password = config.Password || '';
+                const colonIdx = password.indexOf(':');
+                let cipher, pass;
+                if (colonIdx !== -1) {
+                    cipher = password.substring(0, colonIdx);
+                    pass = password.substring(colonIdx + 1);
+                } else {
+                    cipher = password;
+                    pass = config.Username || '';
+                }
+                proxy = {
+                    name: config.Remarks,
+                    type: 'ss',
+                    server,
+                    port,
+                    cipher,
+                    password: pass
+                };
+                break;
+            }
+
+            case 'vless': {
+                proxy = {
+                    name: config.Remarks,
+                    type: 'vless',
+                    server,
+                    port,
+                    uuid: config.Password || config.Uuid,
+                    alterId: parseInt(config.AlterId || config.aid) || 0
+                };
+                break;
+            }
+
+            case 'vmess': {
+                proxy = {
+                    name: config.Remarks,
+                    type: 'vmess',
+                    server,
+                    port,
+                    uuid: config.Password || config.Uuid,
+                    alterId: parseInt(config.AlterId || config.aid) || 0,
+                    cipher: config.scy || config.Cipher || 'auto'
+                };
+                break;
+            }
+
+            case 'trojan': {
+                proxy = {
+                    name: config.Remarks,
+                    type: 'trojan',
+                    server,
+                    port,
+                    password: config.Password || ''
+                };
+                break;
+            }
+
+            case 'hysteria2': {
+                proxy = {
+                    name: config.Remarks,
+                    type: 'hysteria2',
+                    server,
+                    port,
+                    password: config.Password || ''
+                };
+                break;
+            }
+
+            case 'tuic': {
+                proxy = {
+                    name: config.Remarks,
+                    type: 'tuic',
+                    server,
+                    port,
+                    uuid: config.Password || config.Uuid,
+                    password: config.Username || ''
+                };
+                break;
+            }
+
+            case 'anytls': {
+                proxy = {
+                    name: config.Remarks,
+                    type: 'anytls',
+                    server,
+                    port,
+                    password: config.Password || ''
+                };
+                break;
+            }
+
+            case 'naive': {
+                proxy = {
+                    name: config.Remarks,
+                    type: 'socks5',
+                    server,
+                    port,
+                    username: config.Username || '',
+                    password: config.Password || ''
+                };
+                break;
+            }
+
+            case 'policygroup':
+            case 'proxychain':
+                // 策略组 / 代理链不能直接作为代理输出
+                return null;
+
+            default:
+                // 未知类型
+                return null;
         }
 
-        if (network === 'ws') {
-            const wsOpts = {};
-            if (config.path) wsOpts.path = config.path;
-            if (config.host) {
-                wsOpts.headers = { Host: config.host };
-            }
-            if (Object.keys(wsOpts).length > 0) {
-                proxy['ws-opts'] = wsOpts;
-            }
-        }
+        // 应用 TLS 字段
+        applyTlsFields(proxy);
 
-        if (network === 'grpc') {
-            const grpcOpts = {};
-            if (config.path) grpcOpts['grpc-service-name'] = config.path;
-            if (config.host) grpcOpts['grpc-service-name'] = config.host;
-            if (Object.keys(grpcOpts).length > 0) {
-                proxy['grpc-opts'] = grpcOpts;
-            }
-        }
+        // 应用传输层设置
+        applyTransport(proxy);
 
-        if (config.tls === 'tls' || config.tls === 'reality') {
-            proxy.tls = true;
-            if (config.sni) {
-                proxy.servername = config.sni;
-                proxy.sni = config.sni;
-            }
-            if (config.fp) proxy['client-fingerprint'] = config.fp;
-            if (config.alpn) proxy.alpn = String(config.alpn).split(',').map(s => s.trim());
+        // 应用 ProtoExtraObj 中的额外字段
+        const protoExtra = config.ProtoExtraObj || {};
+        if (protoExtra.CongestionControl && proxy.type === 'tuic') {
+            proxy['congestion-controller'] = protoExtra.CongestionControl;
+        }
+        if (protoExtra.VmessSecurity && proxy.type === 'vmess') {
+            proxy.cipher = protoExtra.VmessSecurity;
         }
 
         return proxy;
