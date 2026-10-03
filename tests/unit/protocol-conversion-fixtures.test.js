@@ -991,6 +991,25 @@ proxies:
             .not.toHaveProperty('skip-cert-verify');
     });
 
+    // The airport contradicts itself: the same Hysteria2 node ships as
+    // pinSHA256 + insecure=false in share links but as fingerprint +
+    // skip-cert-verify: true in its Clash YAML. Honouring the false there makes
+    // the client reject the self-signed certificate and time out, so a pinned
+    // certificate wins over the flag.
+    it('trusts a pinned certificate over an explicit insecure=0', () => {
+        const pinned = urlToClashProxy(
+            'hysteria2://pw@a.example.com:443?insecure=false&sni=s.example.com'
+            + '&pinSHA256=2b6c9b75b2ef903fbe66ee91d1801941dea0ddb5429505ae3bce65e2fb17ad45#HY'
+        );
+        expect(pinned.fingerprint).toBe('2b6c9b75b2ef903fbe66ee91d1801941dea0ddb5429505ae3bce65e2fb17ad45');
+        expect(pinned['skip-cert-verify']).toBe(true);
+
+        // Without a pin there is nothing to fall back on, so the flag is honoured.
+        const unpinned = urlToClashProxy('hysteria2://pw@a.example.com:443?insecure=0#HY');
+        expect(unpinned).not.toHaveProperty('fingerprint');
+        expect(unpinned['skip-cert-verify']).toBe(false);
+    });
+
     it('keeps client-fingerprint and certificate pinning as separate fields', () => {
         const url = convertClashProxyToUrl({
             name: 'Both Kinds',

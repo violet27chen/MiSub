@@ -1012,6 +1012,12 @@ function parseHysteria2Url(url) {
         // v2rayN 下发 vless/trojan 时使用 pcs，fp 仅作内部兼容。
         const pinSha256 = params.get('pinSHA256') || params.get('pinsha256') || params.get('fp');
         if (pinSha256) proxy.fingerprint = pinSha256;
+        // 部分机场在分享链接里下发 insecure=false，却在 Clash YAML 里给同一节点
+        // skip-cert-verify: true，两者自相矛盾。此时若照搬 false，客户端会因自签证书
+        // 校验失败而超时。既然已经用指纹锁定了证书，就以指纹为准并跳过系统 CA 校验。
+        if (proxy.fingerprint && proxy['skip-cert-verify'] === false) {
+            proxy['skip-cert-verify'] = true;
+        }
         // Hysteria2 基于 UDP，缺省会退化为 TCP 行为
         proxy.udp = params.get('udp') === '0' ? false : true;
         if (params.get('up')) proxy.up = params.get('up');
