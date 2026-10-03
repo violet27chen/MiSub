@@ -34,11 +34,12 @@ export async function resolveNodeListWithCache({
     forceRefresh,
     refreshNodes,
     context,
-    targetMisubsCount
+    targetMisubsCount,
+    cacheTtlSeconds
 }) {
     const { data: cachedData, status: cacheStatus } = forceRefresh
         ? { data: null, status: 'miss' }
-        : await getCache(storageAdapter, cacheKey);
+        : await getCache(storageAdapter, cacheKey, cacheTtlSeconds);
 
     let combinedNodeList;
     let cacheHeaders = {};

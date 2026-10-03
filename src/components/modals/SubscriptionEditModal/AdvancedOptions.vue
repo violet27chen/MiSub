@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue';
 import Switch from '../../ui/Switch.vue';
 import { useI18n } from '../../../i18n/index.js';
 
@@ -10,6 +11,25 @@ const props = defineProps({
     required: true
   }
 });
+
+const cacheTtlOptions = [60, 300, 900, 1800];
+
+// 空值代表沿用全局默认（3 分钟），写入时用 undefined 而不是 0 保持语义清晰。
+const cacheTtlSeconds = computed({
+  get() {
+    const value = Number(props.editingSubscription.nodeCacheTtlSeconds);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  },
+  set(value) {
+    const next = Number(value);
+    props.editingSubscription.nodeCacheTtlSeconds = next > 0 ? next : undefined;
+  }
+});
+
+const formatMinutes = (seconds) => {
+  const minutes = seconds / 60;
+  return Number.isInteger(minutes) ? `${minutes} ${t('subscriptions.minutesUnit')}` : `${minutes}`;
+};
 </script>
 
 <template>
@@ -67,6 +87,21 @@ const props = defineProps({
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('subscriptions.nodeCacheDesc') }}</p>
       </div>
       <Switch v-model="editingSubscription.enableNodeCache" />
+    </div>
+
+    <div>
+      <label for="sub-edit-cache-ttl" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        {{ t('subscriptions.cacheTtlLabel') }}
+        <span class="text-xs text-gray-500 ml-2">{{ t('subscriptions.optionalDefault') }}</span>
+      </label>
+      <select id="sub-edit-cache-ttl" v-model="cacheTtlSeconds"
+        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 misub-radius-md dark:text-white">
+        <option :value="0">{{ t('subscriptions.cacheTtlDefault') }}</option>
+        <option v-for="option in cacheTtlOptions" :key="option" :value="option">
+          {{ formatMinutes(option) }}
+        </option>
+      </select>
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('subscriptions.cacheTtlHint') }}</p>
     </div>
 
     <div class="flex items-center justify-between gap-4">

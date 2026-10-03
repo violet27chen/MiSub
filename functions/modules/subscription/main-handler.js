@@ -4,7 +4,7 @@ import { generateCombinedNodeList } from '../../services/subscription-service.js
 import { sendEnhancedTgNotification, tgEscape } from '../notifications.js';
 import { KV_KEY_SUBS, KV_KEY_PROFILES, KV_KEY_SETTINGS, DEFAULT_SETTINGS as defaultSettings, DEFAULT_SUBCONVERTER_BACKEND } from '../config.js';
 import { createDisguiseResponse } from '../disguise-page.js';
-import { generateCacheKey, setCache } from '../../services/node-cache-service.js';
+import { generateCacheKey, setCache, resolveEffectiveCacheTtlSeconds } from '../../services/node-cache-service.js';
 import { resolveRequestContext } from './request-context.js';
 import { resolveNodeListWithCache } from './cache-manager.js';
 import { ProcessorService } from '../../services/processor-service.js';
@@ -748,7 +748,10 @@ export async function handleMisubRequest(context) {
         forceRefresh,
         refreshNodes,
         context,
-        targetMisubsCount: targetMisubs.length
+        targetMisubsCount: targetMisubs.length,
+        // 订阅组里最短的那个缓存时长生效：只要有一个机场会轮换节点池，
+        // 整个订阅组就不该缓存更久，否则会把已下线的节点一直喂给客户端。
+        cacheTtlSeconds: resolveEffectiveCacheTtlSeconds(targetMisubs)
     });
 
     console.log(`[MiSub Nodes] Count/Length: ${combinedNodeList ? combinedNodeList.length : 0}`);

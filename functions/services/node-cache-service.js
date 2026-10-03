@@ -13,8 +13,60 @@ const CACHE_CONFIG = {
     FRESH_TTL: 3 * 60 * 1000,            // 新鲜期：3 分钟（命中时不触发后台刷新）
     STALE_TTL: 60 * 60 * 1000,           // 可用期：1 小时（超过后同步获取）
     MAX_AGE: 12 * 60 * 60 * 1000,        // 最大缓存时间：12 小时
-    BACKGROUND_REFRESH_TIMEOUT: 25000    // 后台刷新超时：25 秒
+    BACKGROUND_REFRESH_TIMEOUT: 25000,   // 后台刷新超时：25 秒
+    MIN_TTL: 60 * 1000,                  // 允许的最小新鲜期：1 分钟
+    MAX_TTL: 12 * 60 * 60 * 1000         // 允许的最大可用期：12 小时
 };
+
+/**
+ * 把订阅上手填的缓存时长（秒）规范化为可供 getCache 使用的三个窗口。
+ * 订阅未设置或数值非法时回退到全局默认值。
+ *
+ * 部分机场会轮换节点池，缓存过久会累积已下线的节点并表现为延迟超时，
+ * 因此这类订阅可以把时长调短，让节点更快跟上机场的变更。
+ *
+ * 注意 resolveNodeListWithCache 对 stale 与 expired 的处理完全一致（都返回旧值
+ * 并在后台刷新），只有 miss 才会同步重新拉取。所以这里刻意把可用期收得很紧：
+ * 用户设定的时长是「节点最多可能有多旧」的上限，而不是仅仅多久才触发一次后台刷新。
+ *
+ * @param {number|undefined|null} ttlSeconds 订阅设置的缓存时长（秒）
+ * @returns {{freshTtl:number, staleTtl:number, maxAge:number}}
+ */
+export function resolveCacheTtlWindows(ttlSeconds) {
+    const defaults = {
+        freshTtl: CACHE_CONFIG.FRESH_TTL,
+        staleTtl: CACHE_CONFIG.STALE_TTL,
+        maxAge: CACHE_CONFIG.MAX_AGE
+    };
+
+    const parsed = Number(ttlSeconds);
+    if (!Number.isFinite(parsed) || parsed <= 0) return defaults;
+
+    const freshTtl = Math.min(Math.max(parsed * 1000, CACHE_CONFIG.MIN_TTL), CACHE_CONFIG.MAX_TTL);
+    // fresh 内直接命中；再宽一倍的窗口内返回旧值并后台刷新；
+    // 超过 maxAge 则丢弃缓存、同步拉取，保证不会长期供应陈旧节点。
+    const staleTtl = Math.min(freshTtl * 2, CACHE_CONFIG.MAX_AGE);
+    const maxAge = Math.min(freshTtl * 3, CACHE_CONFIG.MAX_AGE);
+
+    return { freshTtl, staleTtl, maxAge };
+}
+
+/**
+ * 取一组订阅中最短的新鲜期。订阅组里只要有一个机场会轮换节点池，
+ * 整个订阅组的缓存就不该比它更久，否则被拖慢的那个机场会积累死节点。
+ *
+ * @param {Array<Object|null|undefined>} subs
+ * @returns {number|undefined} 秒；没有任何订阅设置时返回 undefined
+ */
+export function resolveEffectiveCacheTtlSeconds(subs) {
+    if (!Array.isArray(subs)) return undefined;
+
+    const values = subs
+        .map(sub => Number(sub?.nodeCacheTtlSeconds))
+        .filter(value => Number.isFinite(value) && value > 0);
+
+    return values.length > 0 ? Math.min(...values) : undefined;
+}
 
 /**
  * 生成缓存键
@@ -47,23 +99,25 @@ function isSubscriptionNodeCacheKey(key) {
  * 获取缓存
  * @param {Object} storageAdapter - 存储适配器
  * @param {string} cacheKey - 缓存键
+ * @param {number} [ttlSeconds] - 订阅自定义的新鲜期（秒），缺省用全局配置
  * @returns {Promise<{data: CacheEntry|null, status: 'fresh'|'stale'|'expired'|'miss'}>}
  */
-export async function getCache(storageAdapter, cacheKey) {
+export async function getCache(storageAdapter, cacheKey, ttlSeconds) {
     try {
         const cached = await storageAdapter.get(cacheKey);
         if (!cached) {
             return { data: null, status: 'miss' };
         }
 
+        const { freshTtl, staleTtl, maxAge } = resolveCacheTtlWindows(ttlSeconds);
         const now = Date.now();
         const age = now - cached.timestamp;
 
-        if (age < CACHE_CONFIG.FRESH_TTL) {
+        if (age < freshTtl) {
             return { data: cached, status: 'fresh' };
-        } else if (age < CACHE_CONFIG.STALE_TTL) {
+        } else if (age < staleTtl) {
             return { data: cached, status: 'stale' };
-        } else if (age < CACHE_CONFIG.MAX_AGE) {
+        } else if (age < maxAge) {
             return { data: cached, status: 'expired' };
         } else {
             return { data: null, status: 'miss' };
