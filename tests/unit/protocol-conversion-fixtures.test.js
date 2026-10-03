@@ -956,6 +956,41 @@ proxies:
             .toMatchObject({ udp: false });
     });
 
+    // Airports that serve share links to a v2rayN User-Agent spell the certificate
+    // pin pinSHA256 / pcs rather than fp, and send insecure explicitly as false.
+    // Reading only our own spelling silently dropped those pins, which surfaced as
+    // a latency timeout on every node.
+    it('reads certificate pins from v2rayN share-link parameter names', () => {
+        const hy = urlToClashProxy(
+            'hysteria2://pw@aws-linkhy9.lxyun.xyz:60000/?insecure=false&sni=iosapps.itunes.apple.com'
+            + '&pinSHA256=2b6c9b75b2ef903fbe66ee91d1801941dea0ddb5429505ae3bce65e2fb17ad45'
+            + '&mport=60000-65530#HY'
+        );
+        expect(hy.fingerprint).toBe('2b6c9b75b2ef903fbe66ee91d1801941dea0ddb5429505ae3bce65e2fb17ad45');
+        expect(hy.mport).toBe('60000-65530');
+        expect(hy.udp).toBe(true);
+
+        const vless = urlToClashProxy(
+            'vless://uuid-1@aws-link1.lxyun.xyz:443?encryption=none&security=tls'
+            + '&flow=xtls-rprx-vision&fp=safari&insecure=1&sni=iosapps.itunes.apple.com'
+            + '&pcs=d5c39647e414c144b719bc49cb41c4b8f46f09f4cf26c863cae15c01d4a7b96a#HK'
+        );
+        expect(vless.fingerprint).toBe('d5c39647e414c144b719bc49cb41c4b8f46f09f4cf26c863cae15c01d4a7b96a');
+        expect(vless['client-fingerprint']).toBe('safari');
+        expect(vless['skip-cert-verify']).toBe(true);
+    });
+
+    it('distinguishes an explicit insecure=0 from an absent flag', () => {
+        expect(urlToClashProxy('hysteria2://pw@a.example.com:443?insecure=0#HY'))
+            .toMatchObject({ 'skip-cert-verify': false });
+        expect(urlToClashProxy('hysteria2://pw@a.example.com:443?insecure=false#HY'))
+            .toMatchObject({ 'skip-cert-verify': false });
+        expect(urlToClashProxy('hysteria2://pw@a.example.com:443?insecure=1#HY'))
+            .toMatchObject({ 'skip-cert-verify': true });
+        expect(urlToClashProxy('hysteria2://pw@a.example.com:443#HY'))
+            .not.toHaveProperty('skip-cert-verify');
+    });
+
     it('keeps client-fingerprint and certificate pinning as separate fields', () => {
         const url = convertClashProxyToUrl({
             name: 'Both Kinds',

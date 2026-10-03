@@ -190,8 +190,15 @@ function parseVlessUrl(url) {
         }
 
         // Skip cert verify (统一支持 allowInsecure 和 insecure)
-        if (params.get('allowInsecure') === '1' || params.get('insecure') === '1') {
-            proxy['skip-cert-verify'] = true;
+        // 显式解析布尔值：机场常下发 insecure=0，缺失语义与 false 不同
+        const insecureRaw = params.get('allowInsecure') ?? params.get('insecure');
+        if (insecureRaw !== null && insecureRaw !== undefined) {
+            const normalizedInsecure = String(insecureRaw).trim().toLowerCase();
+            if (normalizedInsecure === '1' || normalizedInsecure === 'true') {
+                proxy['skip-cert-verify'] = true;
+            } else if (normalizedInsecure === '0' || normalizedInsecure === 'false') {
+                proxy['skip-cert-verify'] = false;
+            }
         }
 
 // SNI (支持 sni 和 peer 两种参数名，Shadowrocket 使用 peer)
@@ -208,9 +215,11 @@ function parseVlessUrl(url) {
             proxy['client-fingerprint'] = params.get('fp');
         }
 
-        // 证书指纹固定（pin 与 client-fingerprint 分开承载）
-        if (params.get('pin')) {
-            proxy.fingerprint = params.get('pin');
+        // 证书指纹固定。注意不能复用 fp —— 该参数已被 client-fingerprint 占用。
+        // v2rayN 用 pcs 下发证书指纹，Hysteria2 用 pinSHA256，两者都要接受。
+        const certPin = params.get('pcs') || params.get('pin') || params.get('pinSHA256');
+        if (certPin) {
+            proxy.fingerprint = certPin;
         }
 
         if (params.get('udp') !== null) {
@@ -320,9 +329,10 @@ function parseTrojanUrl(url) {
             proxy['client-fingerprint'] = params.get('fp');
         }
 
-        // 证书指纹固定（pin 与 client-fingerprint 分开承载）
-        if (params.get('pin')) {
-            proxy.fingerprint = params.get('pin');
+        // 证书指纹固定。v2rayN 用 pcs 下发，Hysteria2 用 pinSHA256
+        const trojanCertPin = params.get('pcs') || params.get('pin') || params.get('pinSHA256');
+        if (trojanCertPin) {
+            proxy.fingerprint = trojanCertPin;
         }
 
         if (params.get('udp') !== null) {
@@ -330,8 +340,14 @@ function parseTrojanUrl(url) {
         }
 
         // Skip cert verify
-        if (params.get('allowInsecure') === '1') {
-            proxy['skip-cert-verify'] = true;
+        const trojanInsecure = params.get('allowInsecure') ?? params.get('insecure');
+        if (trojanInsecure !== null && trojanInsecure !== undefined) {
+            const normalizedTrojanInsecure = String(trojanInsecure).trim().toLowerCase();
+            if (normalizedTrojanInsecure === '1' || normalizedTrojanInsecure === 'true') {
+                proxy['skip-cert-verify'] = true;
+            } else if (normalizedTrojanInsecure === '0' || normalizedTrojanInsecure === 'false') {
+                proxy['skip-cert-verify'] = false;
+            }
         }
 
         // [重要] dialer-proxy 链式代理
@@ -964,8 +980,16 @@ function parseHysteria2Url(url) {
         }
 
         // Skip cert verify
-        if (params.get('insecure') === '1' || params.get('allowInsecure') === '1') {
-            proxy['skip-cert-verify'] = true;
+        // 部分机场下发 insecure=false/0 而非省略参数，必须显式解析布尔值，
+        // 否则 false 会被当成「未指定」而丢失 skip-cert-verify 语义。
+        const insecureValue = params.get('insecure') ?? params.get('allowInsecure');
+        if (insecureValue !== null && insecureValue !== undefined) {
+            const normalized = String(insecureValue).trim().toLowerCase();
+            if (normalized === '1' || normalized === 'true') {
+                proxy['skip-cert-verify'] = true;
+            } else if (normalized === '0' || normalized === 'false') {
+                proxy['skip-cert-verify'] = false;
+            }
         }
 
         // [Hysteria2] handshake timeout
@@ -984,8 +1008,10 @@ function parseHysteria2Url(url) {
 
         if (params.get('ports')) proxy.ports = params.get('ports');
         if (params.get('mport')) proxy.mport = params.get('mport');
-        // 证书指纹固定（SHA256）。缺失会导致对端证书无法通过校验，表现为延迟超时。
-        if (params.get('fp')) proxy.fingerprint = params.get('fp');
+        // 证书指纹固定。Hysteria2 官方 URI 规范使用 pinSHA256，
+        // v2rayN 下发 vless/trojan 时使用 pcs，fp 仅作内部兼容。
+        const pinSha256 = params.get('pinSHA256') || params.get('pinsha256') || params.get('fp');
+        if (pinSha256) proxy.fingerprint = pinSha256;
         // Hysteria2 基于 UDP，缺省会退化为 TCP 行为
         proxy.udp = params.get('udp') === '0' ? false : true;
         if (params.get('up')) proxy.up = params.get('up');
