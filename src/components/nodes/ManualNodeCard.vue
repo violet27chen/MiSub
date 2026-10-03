@@ -112,7 +112,7 @@ const protocolStyle = computed(() => {
               'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400': pingResult.status === 'ok' && pingResult.latency < 300,
               'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400': pingResult.status === 'ok' && pingResult.latency >= 300,
               'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400': pingResult.status === 'error' || pingResult.status === 'timeout',
-              'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400': pingResult.status === 'loading'
+              'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400': pingResult.status === 'loading' || pingResult.status === 'unsupported'
            }"
            :title="pingResult.message || (pingResult.status === 'ok' ? t('manualNodes.connectivityOk') : t('manualNodes.connectivityFailed'))"
       >
@@ -122,6 +122,7 @@ const protocolStyle = computed(() => {
         </svg>
         <span v-if="pingResult.status === 'loading'">{{ t('manualNodes.pinging') }}</span>
         <span v-else-if="pingResult.status === 'ok'">{{ pingResult.latency }}ms</span>
+        <span v-else-if="pingResult.status === 'unsupported'">{{ t('manualNodes.notTestable') }}</span>
         <span v-else>{{ t('manualNodes.unreachable') }}</span>
       </div>
     </div>

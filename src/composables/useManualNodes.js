@@ -319,8 +319,8 @@ export function useManualNodes(markDirty) {
       pingResults.value = { ...pingResults.value, [nodeId]: { status: 'loading', latency: 0 } };
   
       try {
-          // 由于 fetch ping 主要看 tcp 连通性，给个 3000ms 兜底即可
-          const result = await pingNode(host, port, 3000);
+          // fetch ping 只能反映 TCP 可达性，给个 3000ms 兜底即可
+          const result = await pingNode(host, port, 3000, { url: node.url });
           pingResults.value = { ...pingResults.value, [nodeId]: result };
       } catch(e) {
           pingResults.value = { ...pingResults.value, [nodeId]: { status: 'error', latency: -1 } };
