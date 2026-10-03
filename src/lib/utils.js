@@ -65,6 +65,31 @@ export function extractNodeName(url) {
                     }
                 }
                 return '';
+            case 'v2rayn': {
+                // 格式: v2rayn://vless/{base64(json)} 或 v2rayn://http/{base64(json)}
+                try {
+                    let payload = mainPart;
+                    const slashIdx = payload.indexOf('/');
+                    if (slashIdx !== -1) {
+                        payload = payload.substring(slashIdx + 1);
+                    }
+                    let normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+                    while (normalized.length % 4) normalized += '=';
+                    const binaryString = atob(normalized);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const jsonStr = new TextDecoder('utf-8').decode(bytes);
+                    const config = JSON.parse(jsonStr);
+                    return config.Remarks || '';
+                } catch (e) {
+                    if (isDev) {
+                        console.debug('[Utils] Failed to decode v2rayn link:', e);
+                    }
+                }
+                return '';
+            }
             default:
                 if (url.startsWith('http')) return new URL(url).hostname;
                 return '';
@@ -126,6 +151,21 @@ export function extractHostAndPort(url) {
             const decodedString = atob(mainPart);
             const nodeConfig = JSON.parse(decodedString);
             return { host: nodeConfig.add || '', port: String(nodeConfig.port || '') };
+        }
+
+        // --- v2rayn://{ConfigType}/{base64(json)} 专用处理 ---
+        if (protocol === 'v2rayn') {
+            const slashIndex = mainPart.indexOf('/');
+            const payload = slashIndex === -1 ? mainPart : mainPart.substring(slashIndex + 1);
+            let normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+            while (normalized.length % 4) normalized += '=';
+            const binaryString = atob(normalized);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const nodeConfig = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+            return { host: nodeConfig.Address || '', port: String(nodeConfig.Port || '') };
         }
 
         let decoded = false;

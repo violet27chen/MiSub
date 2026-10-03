@@ -512,7 +512,33 @@ export function parseNodeInfo(nodeUrl) {
 } catch (e) {
 console.debug('[GeoUtils] SSR decode failed:', e);
 }
-} else if (protocol === 'wireguard') {
+    } else if (protocol === 'v2rayn') {
+        // v2rayn://vless/{base64(json)} or v2rayn://http/{base64(json)}
+        // 格式: v2rayn://{ConfigType}/{url-safe-base64(json)}
+        try {
+            let payload = nodeUrl.substring(nodeUrl.indexOf('://') + 3);
+            const slashIdx = payload.indexOf('/');
+            if (slashIdx !== -1) {
+                payload = payload.substring(slashIdx + 1);
+            }
+            // URL-safe base64 转换
+            let normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+            while (normalized.length % 4) normalized += '=';
+            const binaryString = atob(normalized);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const jsonStr = new TextDecoder('utf-8').decode(bytes);
+            const config = JSON.parse(jsonStr);
+
+            if (config.Remarks) nodeName = config.Remarks.trim();
+            if (config.Address) server = config.Address;
+            if (config.Port) port = String(config.Port);
+        } catch (e) {
+            console.debug('[GeoUtils] v2rayn decode failed:', e);
+        }
+    } else if (protocol === 'wireguard') {
 // WireGuard 格式: wireguard://privatekey@server:port?params#name
 let body = nodeUrl.substring('wireguard://'.length);
 

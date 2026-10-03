@@ -7,6 +7,7 @@ export const COMMON_NODE_PROTOCOLS = [
   'ssr',
   'vmess',
   'vless',
+  'v2rayn',
   'trojan',
   'hysteria',
   'hysteria2',

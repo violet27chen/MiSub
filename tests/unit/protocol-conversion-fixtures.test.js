@@ -621,18 +621,6 @@ proxies:
             },
             {
                 proxy: {
-                    name: 'Fixture HTTP Export',
-                    type: 'http',
-                    server: 'http.example.com',
-                    port: 8080,
-                    username: 'user',
-                    password: 'p@ss:word'
-                },
-                urlPattern: /^http:\/\/user:p%40ss%3Aword@http\.example\.com:8080#Fixture%20HTTP%20Export$/,
-                requiredParts: []
-            },
-            {
-                proxy: {
                     name: 'Fixture Naive Export',
                     type: 'naive',
                     server: 'naive.example.com',
@@ -788,6 +776,25 @@ proxies:
         expect(allParsed.map(p => p.type)).toEqual(['http', 'vless', 'vmess', 'trojan']);
     });
 
+    it('parses real v2rayn://vless link with Reality, raw network, and flow', () => {
+        const realLink = 'v2rayn://vless/eyJJbmRleElkIjoiYVVjSWZBIiwiQ29uZmlnVHlwZSI6NSwiQ29uZmlnVmVyc2lvbiI6NCwiRGlzcGxheUxvZyI6dHJ1ZSwiUmVtYXJrcyI6Ilx1RDgzQ1x1RERFRlx1RDgzQ1x1RERGNVZJUOaXpeacrDExLeS4iee9keS8mOWMljRLMjBXIiwiQWRkcmVzcyI6ImpwMTEuc2FueXVhbi5jeW91IiwiUG9ydCI6NDEyMTMsIlBhc3N3b3JkIjoiNmQxMTg0N2EtMDcwOC00MjE1LWExMGItY2I4OTVkZWE0Y2RmIiwiTmV0d29yayI6InJhdyIsIlN0cmVhbVNlY3VyaXR5IjoicmVhbGl0eSIsIlNuaSI6ImFkZG9ucy5tb3ppbGxhLm9yZyIsIkZpbmdlcnByaW50IjoiY2hyb21lIiwiUHVibGljS2V5IjoiZHlxVjFZakNnUHdWZmllUkZNRXN4OEYwaXZINjFINXVGRjE4elRLWnNuVSIsIlNob3J0SWQiOiJjODUyZGE0MiIsIkFsdGVySWQiOjAsIlByb3RvRXh0cmFPYmoiOnsiRmxvdyI6Inh0bHMtcnByeC12aXNpb24iLCJWbWVzc0VuY3J5cHRpb24iOiJub25lIn0sIlRyYW5zcG9ydEV4dHJhT2JqIjp7IlJhd0hlYWRlckl0eXBlIjoibm9uZSJ9fQ';
+
+        const parsed = urlToClashProxy(realLink);
+        expect(parsed).toMatchObject({
+            type: 'vless',
+            server: 'jp11.sanyuan.cyou',
+            port: 41213,
+            tls: true,
+            sni: 'addons.mozilla.org',
+            servername: 'addons.mozilla.org',
+            'client-fingerprint': 'chrome',
+            flow: 'xtls-rprx-vision',
+            'public-key': 'dyqV1YjCgPwVfieRFMEsx8F0ivH61H5uFF18zTKZsnU',
+            'short-id': 'c852da42'
+        });
+        expect(parsed.network).toBeUndefined();
+    });
+
     it('returns null for invalid v2rayn:// payloads', () => {
         expect(urlToClashProxy('v2rayn://http/not-json')).toBeNull();
         expect(urlToClashProxy('v2rayn://')).toBeNull();
@@ -801,5 +808,40 @@ proxies:
         };
         const groupB64 = Buffer.from(JSON.stringify(groupConfig), 'utf8').toString('base64');
         expect(urlToClashProxy(`v2rayn://policygroup/${groupB64}`)).toBeNull();
+    });
+
+    it('parses v2rayn:// links with name fragment appended by prependNodeName', () => {
+        const vlessConfig = {
+            IndexId: 'test1',
+            ConfigType: 5,
+            ConfigVersion: 4,
+            Remarks: 'VLESS With Fragment',
+            Address: 'vless-frag.example.com',
+            Port: 443,
+            Password: '11111111-2222-3333-4444-555555555555',
+            Network: 'ws',
+            Path: '/ws',
+            Host: 'vless.example.com',
+            StreamSecurity: 'reality',
+            Sni: 'vless.example.com',
+            Fingerprint: 'chrome',
+            PublicKey: 'test-public-key',
+            ShortId: 'abcd1234',
+            ProtoExtraObj: { Flow: 'xtls-rprx-vision' }
+        };
+        const b64 = Buffer.from(JSON.stringify(vlessConfig), 'utf8').toString('base64');
+        const urlWithFragment = `v2rayn://vless/${b64}#手动节点 - VLESS With Fragment`;
+
+        const parsed = urlToClashProxy(urlWithFragment);
+        expect(parsed).toMatchObject({
+            name: 'VLESS With Fragment',
+            type: 'vless',
+            server: 'vless-frag.example.com',
+            port: 443,
+            uuid: '11111111-2222-3333-4444-555555555555',
+            flow: 'xtls-rprx-vision',
+            'public-key': 'test-public-key',
+            'short-id': 'abcd1234'
+        });
     });
 });

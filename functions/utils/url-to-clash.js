@@ -452,12 +452,15 @@ function parseV2raynUrl(url) {
         const body = url.substring(prefix.length);
 
         // 分离 ConfigType 和 base64 payload
+        // 去除可能的 URL fragment (#name 由 prependNodeName 添加)
+        const hashIdx = body.indexOf('#');
+        const bodyWithoutFragment = hashIdx !== -1 ? body.substring(0, hashIdx) : body;
         let payload;
-        const slashIdx = body.indexOf('/');
+        const slashIdx = bodyWithoutFragment.indexOf('/');
         if (slashIdx !== -1) {
-            payload = body.substring(slashIdx + 1);
+            payload = bodyWithoutFragment.substring(slashIdx + 1);
         } else {
-            payload = body;
+            payload = bodyWithoutFragment;
         }
 
         // 解码 base64 (URL-safe)
@@ -486,7 +489,7 @@ function parseV2raynUrl(url) {
             // 根据 ConfigType 数字推断协议
             const typeMap = {
                 1: 'vless', 2: 'vmess', 3: 'ss', 4: 'trojan',
-                6: 'hysteria2', 7: 'hysteria', 8: 'tuic',
+                5: 'vless', 6: 'hysteria2', 7: 'hysteria', 8: 'tuic',
                 10: 'http', 11: 'anytls', 12: 'naive',
                 101: 'policygroup'
             };
@@ -512,12 +515,23 @@ function parseV2raynUrl(url) {
             if (config.AllowInsecure === 'true' || config.AllowInsecure === true) {
                 proxy['skip-cert-verify'] = true;
             }
+            // Reality fields: PublicKey, ShortId, Flow
+            if (config.PublicKey) {
+                proxy['public-key'] = config.PublicKey;
+            }
+            if (config.ShortId) {
+                proxy['short-id'] = config.ShortId;
+            }
+            const protoExtra = config.ProtoExtraObj || {};
+            if (protoExtra.Flow && proxy.type === 'vless') {
+                proxy.flow = protoExtra.Flow;
+            }
         };
 
         // 转换传输层设置
         const applyTransport = (proxy) => {
             const network = config.Network || 'tcp';
-            if (network !== 'tcp') {
+            if (network !== 'tcp' && network !== 'raw') {
                 proxy.network = network;
 
                 if (network === 'ws') {
@@ -532,7 +546,7 @@ function parseV2raynUrl(url) {
                 if (network === 'grpc') {
                     const grpcOpts = {};
                     if (config.Path) grpcOpts['grpc-service-name'] = config.Path;
-                    if (config.Host) grpcOpts['grpc-service-name'] = config.Host;
+                    if (config.Host) grpcOpts.grpc_service_name = config.Host;
                     if (Object.keys(grpcOpts).length > 0) {
                         proxy['grpc-opts'] = grpcOpts;
                     }
@@ -556,6 +570,15 @@ function parseV2raynUrl(url) {
                         httpOpts.headers.Host = config.Host.split(',').map(h => h.trim());
                     }
                     proxy['http-opts'] = httpOpts;
+                }
+            }
+            // Handle TransportExtraObj.RawHeaderType for raw TCP
+            if (network === 'raw') {
+                const transportExtra = config.TransportExtraObj || {};
+                if (transportExtra.RawHeaderType && transportExtra.RawHeaderType !== 'none') {
+                    proxy['http-opts'] = {
+                        headers: { Host: config.Host || '' }
+                    };
                 }
             }
         };

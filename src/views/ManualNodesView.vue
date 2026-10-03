@@ -3,6 +3,8 @@ import { ref, defineAsyncComponent } from 'vue';
 import { useDataStore } from '../stores/useDataStore.js';
 import { useManualNodes } from '../composables/useManualNodes.js';
 import { useNodeForms } from '../composables/useNodeForms.js'; // Added
+import { useBulkImportLogic } from '../composables/useBulkImportLogic.js';
+import { useSubscriptions } from '../composables/useSubscriptions.js';
 import { useToastStore } from '../stores/toast.js';
 import { extractNodeName } from '../lib/utils.js';
 import ManualNodePanel from '../components/nodes/ManualNodePanel.vue';
@@ -14,11 +16,13 @@ import BatchGroupModal from '../components/modals/BatchGroupModal.vue'; // Added
 import { useI18n } from '../i18n/index.js';
 
 const GroupManagementModal = defineAsyncComponent(() => import('../components/modals/GroupManagementModal.vue'));
+const BulkImportModal = defineAsyncComponent(() => import('../components/modals/BulkImportModal.vue'));
 
 const dataStore = useDataStore();
 const { showToast } = useToastStore();
 const { markDirty } = dataStore;
-const { t } = useI18n();
+  const { t } = useI18n();
+  const { addSubscriptionsFromBulk } = useSubscriptions(markDirty);
 
 // Component Logic Reuse
 const isSortingNodes = ref(false);
@@ -26,10 +30,10 @@ const manualNodeViewMode = ref(localStorage.getItem('manualNodeViewMode') || 'ca
 const showDeleteNodesModal = ref(false);
 const showBatchDeleteModal = ref(false);
 const batchDeleteIds = ref([]);
-const showSubscriptionImportModal = ref(false);
-const showDedupModal = ref(false);
-const dedupPlan = ref(null);
-const showBatchGroupModal = ref(false); // Added
+  const showSubscriptionImportModal = ref(false);
+  const showDedupModal = ref(false);
+  const dedupPlan = ref(null);
+  const showBatchGroupModal = ref(false); // Added
 const batchGroupIds = ref([]); // Added
 const showGroupManagementModal = ref(false); // 分组管理模态框
 
@@ -57,6 +61,11 @@ const {
   handleUrlInput: handleNodeUrlInput,
   handleSave: handleSaveNode
 } = useNodeForms({ addNode, updateNode });
+
+const {
+  showModal: showBulkImportModal,
+  handleBulkImport
+} = useBulkImportLogic({ addSubscriptionsFromBulk, addNodesFromBulk });
 
 // Actions
 const setViewMode = (mode) => {
@@ -158,7 +167,7 @@ const handleGroupReorder = (newOrder) => {
       @edit="(id) => handleEditNode(manualNodes.find(n => n.id === id))" @change-page="changeManualNodesPage"
       @update:search-term="handleSearchTermUpdate" @update:view-mode="setViewMode"
       @toggle-sort="isSortingNodes = !isSortingNodes" @mark-dirty="markDirty" @auto-sort="handleAutoSortNodes"
-      @deduplicate="handleDeduplicateNodes" @import="showSubscriptionImportModal = true"
+      @deduplicate="handleDeduplicateNodes" @import="showBulkImportModal = true"
       @delete-all="showDeleteNodesModal = true" @reorder="reorderManualNodes" @rename-group="renameGroup"
       @set-group-filter="setGroupFilter"
       @batch-update-group="(ids, group) => batchUpdateGroup(ids, group)"
@@ -173,6 +182,7 @@ const handleGroupReorder = (newOrder) => {
 
     <ManualNodeEditModal v-model:show="showNodeModal" :is-new="isNewNode" :editing-node="editingNode"
       :groups="manualNodeGroups" @confirm="handleSaveNode" @input-url="handleNodeUrlInput" />
+    <BulkImportModal v-model:show="showBulkImportModal" @import="(txt, tag) => handleBulkImport(txt, tag)" />
     <ManualNodeDedupModal v-model:show="showDedupModal" :plan="dedupPlan"
       @confirm="applyDedupPlan(dedupPlan); showDedupModal = false; dedupPlan = null" />
     
