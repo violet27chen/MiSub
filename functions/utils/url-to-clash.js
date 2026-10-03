@@ -208,6 +208,15 @@ function parseVlessUrl(url) {
             proxy['client-fingerprint'] = params.get('fp');
         }
 
+        // 证书指纹固定（pin 与 client-fingerprint 分开承载）
+        if (params.get('pin')) {
+            proxy.fingerprint = params.get('pin');
+        }
+
+        if (params.get('udp') !== null) {
+            proxy.udp = params.get('udp') === '1';
+        }
+
         // Flow (XTLS)
         if (params.get('flow')) {
             proxy.flow = params.get('flow');
@@ -309,6 +318,15 @@ function parseTrojanUrl(url) {
         // Fingerprint
         if (params.get('fp')) {
             proxy['client-fingerprint'] = params.get('fp');
+        }
+
+        // 证书指纹固定（pin 与 client-fingerprint 分开承载）
+        if (params.get('pin')) {
+            proxy.fingerprint = params.get('pin');
+        }
+
+        if (params.get('udp') !== null) {
+            proxy.udp = params.get('udp') === '1';
         }
 
         // Skip cert verify
@@ -965,6 +983,11 @@ function parseHysteria2Url(url) {
         }
 
         if (params.get('ports')) proxy.ports = params.get('ports');
+        if (params.get('mport')) proxy.mport = params.get('mport');
+        // 证书指纹固定（SHA256）。缺失会导致对端证书无法通过校验，表现为延迟超时。
+        if (params.get('fp')) proxy.fingerprint = params.get('fp');
+        // Hysteria2 基于 UDP，缺省会退化为 TCP 行为
+        proxy.udp = params.get('udp') === '0' ? false : true;
         if (params.get('up')) proxy.up = params.get('up');
         if (params.get('down')) proxy.down = params.get('down');
         const fastOpen = params.get('fast_open') || params.get('fast-open');

@@ -114,6 +114,9 @@ export function convertClashProxyToUrl(proxy) {
             const sni = proxy.servername ?? proxy.sni;
             if (sni !== undefined) params.push(`sni=${encodeURIComponent(sni)}`);
             if (proxy['client-fingerprint']) params.push(`fp=${encodeURIComponent(proxy['client-fingerprint'])}`);
+            // 证书指纹固定。注意不能复用 fp —— 该参数已被 client-fingerprint 占用
+            if (proxy.fingerprint) params.push(`pin=${encodeURIComponent(proxy.fingerprint)}`);
+            if (proxy.udp !== undefined) params.push(`udp=${proxy.udp ? '1' : '0'}`);
             if (proxy['dialer-proxy']) params.push(`dp=${encodeURIComponent(proxy['dialer-proxy'])}`);
             if (proxy.skipCertVerify || proxy['skip-cert-verify']) params.push('allowInsecure=1');
             const query = params.length > 0 ? `?${params.join('&')}` : '';
@@ -153,7 +156,11 @@ export function convertClashProxyToUrl(proxy) {
             const sniVal = proxy.servername !== undefined ? proxy.servername : proxy.sni;
             if (sniVal !== undefined) params.push(`sni=${encodeURIComponent(sniVal)}`);
             if (proxy['client-fingerprint']) params.push(`fp=${encodeURIComponent(proxy['client-fingerprint'])}`);
+            // 证书指纹固定。注意不能复用 fp —— 该参数已被 client-fingerprint 占用
+            if (proxy.fingerprint) params.push(`pin=${encodeURIComponent(proxy.fingerprint)}`);
+            if (proxy.udp !== undefined) params.push(`udp=${proxy.udp ? '1' : '0'}`);
             if (proxy['dialer-proxy']) params.push(`dp=${encodeURIComponent(proxy['dialer-proxy'])}`);
+            if (proxy.skipCertVerify || proxy['skip-cert-verify']) params.push('allowInsecure=1');
             return `vless://${uuid}@${server}:${port}?${params.join('&')}#${encodeURIComponent(name)}`;
         }
 
@@ -166,6 +173,12 @@ export function convertClashProxyToUrl(proxy) {
             if (sni !== undefined) params.push(`sni=${encodeURIComponent(sni)}`);
             if (proxy.skipCertVerify || proxy['skip-cert-verify']) params.push('insecure=1');
             if (proxy.ports !== undefined) params.push(`ports=${encodeURIComponent(proxy.ports)}`);
+            // ports 与 mport 在 Mihomo 中互为别名，保留原样以便往返后仍与机场输出一致
+            if (proxy.mport !== undefined) params.push(`mport=${encodeURIComponent(proxy.mport)}`);
+            // 证书指纹固定（SHA256）。部分机场的 Hysteria2 依赖该字段完成 TLS 校验，
+            // 丢失后客户端会因证书不匹配而无法连接。
+            if (proxy.fingerprint) params.push(`fp=${encodeURIComponent(proxy.fingerprint)}`);
+            if (proxy.udp !== undefined) params.push(`udp=${proxy.udp ? '1' : '0'}`);
             if (proxy.up !== undefined || proxy['up-mbps'] !== undefined) params.push(`up=${encodeURIComponent(proxy.up ?? proxy['up-mbps'])}`);
             if (proxy.down !== undefined || proxy['down-mbps'] !== undefined) params.push(`down=${encodeURIComponent(proxy.down ?? proxy['down-mbps'])}`);
             if (proxy['fast-open'] !== undefined) params.push(`fast_open=${proxy['fast-open'] ? '1' : '0'}`);

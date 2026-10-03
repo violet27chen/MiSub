@@ -844,4 +844,132 @@ proxies:
             'short-id': 'abcd1234'
         });
     });
+
+    // Regression: these airports pin the server certificate and hop ports. Losing
+    // either field makes every node fail TLS validation, which surfaces in Clash as
+    // a latency timeout rather than an error.
+    it('preserves certificate pinning and port hopping across the URL hop', () => {
+        const fixtures = [
+            {
+                label: 'hysteria2 with pin and port hopping',
+                proxy: {
+                    name: 'Fixture HY2 Pin',
+                    type: 'hysteria2',
+                    server: 'aws-linkhy9.lxyun.xyz',
+                    port: 60000,
+                    ports: '60000-65530',
+                    mport: '60000-65530',
+                    udp: true,
+                    'skip-cert-verify': true,
+                    sni: 'iosapps.itunes.apple.com',
+                    password: '794d1aa5-0da8-42cd-83ee-de90c9d0f42f',
+                    fingerprint: '2b6c9b75b2ef903fbe66ee91d1801941dea0ddb5429505ae3bce65e2fb17ad45'
+                },
+                expected: {
+                    type: 'hysteria2',
+                    server: 'aws-linkhy9.lxyun.xyz',
+                    port: 60000,
+                    ports: '60000-65530',
+                    mport: '60000-65530',
+                    udp: true,
+                    sni: 'iosapps.itunes.apple.com',
+                    'skip-cert-verify': true,
+                    fingerprint: '2b6c9b75b2ef903fbe66ee91d1801941dea0ddb5429505ae3bce65e2fb17ad45'
+                }
+            },
+            {
+                label: 'vless with pin and xtls flow',
+                proxy: {
+                    name: 'Fixture VLESS Pin',
+                    type: 'vless',
+                    server: 'aws-link1.lxyun.xyz',
+                    port: 443,
+                    uuid: '794d1aa5-0da8-42cd-83ee-de90c9d0f42f',
+                    udp: true,
+                    tls: true,
+                    'skip-cert-verify': true,
+                    flow: 'xtls-rprx-vision',
+                    'client-fingerprint': 'safari',
+                    servername: 'iosapps.itunes.apple.com',
+                    fingerprint: 'd5c39647e414c144b719bc49cb41c4b8f46f09f4cf26c863cae15c01d4a7b96a'
+                },
+                expected: {
+                    type: 'vless',
+                    server: 'aws-link1.lxyun.xyz',
+                    port: 443,
+                    udp: true,
+                    tls: true,
+                    'skip-cert-verify': true,
+                    flow: 'xtls-rprx-vision',
+                    'client-fingerprint': 'safari',
+                    sni: 'iosapps.itunes.apple.com',
+                    fingerprint: 'd5c39647e414c144b719bc49cb41c4b8f46f09f4cf26c863cae15c01d4a7b96a'
+                }
+            },
+            {
+                label: 'trojan with pin',
+                proxy: {
+                    name: 'Fixture Trojan Pin',
+                    type: 'trojan',
+                    server: 'tj.example.com',
+                    port: 443,
+                    password: 'trojan-pass',
+                    udp: true,
+                    tls: true,
+                    'skip-cert-verify': true,
+                    'client-fingerprint': 'chrome',
+                    sni: 'tj.example.com',
+                    fingerprint: 'aa11bb22cc33dd44ee55ff6677889900aabbccddeeff00112233445566778899'
+                },
+                expected: {
+                    type: 'trojan',
+                    server: 'tj.example.com',
+                    port: 443,
+                    udp: true,
+                    'skip-cert-verify': true,
+                    'client-fingerprint': 'chrome',
+                    sni: 'tj.example.com',
+                    fingerprint: 'aa11bb22cc33dd44ee55ff6677889900aabbccddeeff00112233445566778899'
+                }
+            }
+        ];
+
+        for (const { label, proxy, expected } of fixtures) {
+            const url = convertClashProxyToUrl(proxy);
+            expect(url, label).toBeTruthy();
+
+            const restored = urlToClashProxy(url);
+            expect(restored, label).toMatchObject(expected);
+
+            // The same must hold through the full builtin pipeline.
+            const full = yaml.load(
+                generateBuiltinClashConfig(url, { addFlagEmoji: false })
+            );
+            expect(stripGeneratedFields(full.proxies[0]), label).toMatchObject(expected);
+        }
+    });
+
+    it('defaults Hysteria2 to udp and keeps an explicit opt-out', () => {
+        expect(urlToClashProxy('hysteria2://pw@a.example.com:443?sni=s.example.com#HY2'))
+            .toMatchObject({ udp: true });
+        expect(urlToClashProxy('hysteria2://pw@a.example.com:443?udp=0#HY2'))
+            .toMatchObject({ udp: false });
+    });
+
+    it('keeps client-fingerprint and certificate pinning as separate fields', () => {
+        const url = convertClashProxyToUrl({
+            name: 'Both Kinds',
+            type: 'vless',
+            server: 'a.example.com',
+            port: 443,
+            uuid: 'u-1',
+            tls: true,
+            'client-fingerprint': 'safari',
+            fingerprint: 'deadbeef'
+        });
+
+        const restored = urlToClashProxy(url);
+        expect(restored['client-fingerprint']).toBe('safari');
+        expect(restored.fingerprint).toBe('deadbeef');
+    });
 });
